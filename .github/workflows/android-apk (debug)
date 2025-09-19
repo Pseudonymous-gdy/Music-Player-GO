@@ -19,7 +19,7 @@ env:
   ANDROID_BUILD_TOOLS: "34.0.0"
   # 如果你的 Android 模块不是在仓库根目录（比如 app/ 目录），
   # 修改为你的模块路径，如 ANDROID_PROJECT_DIR: "android-app"
-  ANDROID_PROJECT_DIR: "./project/app"
+  ANDROID_PROJECT_DIR: "./project"
 
 jobs:
   build-apk-debug:
