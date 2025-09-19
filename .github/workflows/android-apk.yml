@@ -18,21 +18,27 @@ jobs:
   build-apk-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle (cache)
+        uses: gradle/actions/setup-gradle@v3
 
-      - uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
         with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
-          build-tools: ${{ env.ANDROID_BUILD_TOOLS }}
+          packages: |
+            platforms;android-${{ env.ANDROID_API_LEVEL }}
+            build-tools;${{ env.ANDROID_BUILD_TOOLS }}
 
-      - name: Grant execute permission
+      # 如果你的 Android 工程在 project/ 目录，请把 working-directory 改为 project
+      - name: Grant execute permission for gradlew
         working-directory: project
         run: chmod +x ./gradlew
 
@@ -40,9 +46,35 @@ jobs:
         working-directory: project
         run: ./gradlew --no-daemon clean assembleDebug
 
-      - name: Upload Debug APK
+      # 扫描所有模块的 debug APK，复制到 artifacts/ 并语义化命名
+      - name: Collect & rename APKs (flat)
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          shopt -s globstar nullglob
+          count=0
+          shortsha="${GITHUB_SHA::7}"
+          # 典型路径：<module>/build/outputs/apk/debug/*.apk
+          for apk in project/**/build/outputs/apk/debug/*.apk; do
+            # 取模块名（build 之前的目录名）
+            module="$(echo "$apk" | sed -E 's#.*/([^/]+)/build/outputs/apk/debug/[^/]+$#\1#')"
+            out="artifacts/${module}-debug-${GITHUB_RUN_NUMBER}-${shortsha}.apk"
+            cp -f "$apk" "$out"
+            echo "collected: $out"
+            count=$((count+1))
+          done
+          if [ "$count" -eq 0 ]; then
+            echo "没有找到 Debug APK，请确认模块路径与构建任务。" >&2
+            exit 1
+          fi
+          echo "apk_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Debug APK artifact (flat)
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk-${{ github.run_number }}-${{ github.sha }}
-          path: project/**/build/outputs/apk/debug/*.apk
+          name: apk-debug-${{ github.run_number }}
+          path: artifacts/*.apk
           if-no-files-found: error
+          retention-days: 14
