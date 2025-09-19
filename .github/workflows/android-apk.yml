@@ -16,8 +16,8 @@ permissions:
 env:
   JAVA_VERSION: "17"                              # sdkmanager 需要 JDK 17+
   ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-  ANDROID_PLATFORM_PKG: "platforms;android-34"    # 如 compileSdkVersion 不是 34，请改这里
-  ANDROID_BUILD_TOOLS_PKG: "build-tools;34.0.0"   # 同步改成匹配版本
+  ANDROID_PLATFORM_PKG: "platforms;android-34"    # 若 compileSdkVersion ≠ 34，请改这里
+  ANDROID_BUILD_TOOLS_PKG: "build-tools;34.0.0"   # 同步改成匹配版本（如 33.0.2）
 
 jobs:
   build-apk-debug:
@@ -37,24 +37,46 @@ jobs:
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # 手动安装最新 commandline-tools 到工作区，避免系统里旧版本导致 XML v4 报警
-      - name: Install Android commandline-tools (latest)
+      # 手动下载安装 commandline-tools，多版本兜底；失败则回落到 Runner 自带
+      - name: Install Android commandline-tools (multi-version fallback)
         shell: bash
         run: |
           set -eu
           SDK_ROOT="${ANDROID_SDK_ROOT}"
           mkdir -p "${SDK_ROOT}/cmdline-tools"
 
-          echo "Downloading Android commandline-tools (latest)..."
-          curl -fsSL -o /tmp/cmdline-tools.zip \
-            https://dl.google.com/android/repository/commandlinetools-linux-latest.zip
+          # 依次尝试这些已知可用版本号（Google 官方命名：commandlinetools-linux-<ver>_latest.zip）
+          VERSIONS=(12266719 11076708 10406996)
+          SUCCESS=0
+          for VER in "${VERSIONS[@]}"; do
+            URL="https://dl.google.com/android/repository/commandlinetools-linux-${VER}_latest.zip"
+            echo "Trying to download cmdline-tools: ${URL}"
+            if curl -fsSL -o /tmp/cmdline-tools.zip "${URL}"; then
+              rm -rf /tmp/cmdline-tools && mkdir -p /tmp/cmdline-tools
+              unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+              rm -rf "${SDK_ROOT}/cmdline-tools/latest"
+              mv /tmp/cmdline-tools/cmdline-tools "${SDK_ROOT}/cmdline-tools/latest"
+              SUCCESS=1
+              echo "Installed cmdline-tools version token: ${VER}"
+              break
+            else
+              echo "Download failed for version ${VER}, trying next..."
+            fi
+          done
 
-          rm -rf /tmp/cmdline-tools && mkdir -p /tmp/cmdline-tools
-          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
-
-          # 压缩包内目录名为 cmdline-tools
-          rm -rf "${SDK_ROOT}/cmdline-tools/latest"
-          mv /tmp/cmdline-tools/cmdline-tools "${SDK_ROOT}/cmdline-tools/latest"
+          if [ "${SUCCESS}" -eq 0 ]; then
+            echo "Falling back to runner preinstalled cmdline-tools (if present)..."
+            PRE="/usr/local/lib/android/sdk/cmdline-tools/latest"
+            if [ -x "${PRE}/bin/sdkmanager" ]; then
+              # 复制一份到工作区，保证写权限与路径一致
+              rm -rf "${SDK_ROOT}/cmdline-tools/latest"
+              mkdir -p "${SDK_ROOT}/cmdline-tools"
+              cp -r "${PRE%/cmdline-tools/latest}"/* "${SDK_ROOT}/cmdline-tools/"
+            else
+              echo "No usable cmdline-tools found. Abort." >&2
+              exit 1
+            fi
+          fi
 
           # 暴露 PATH & 环境变量给后续步骤
           {
@@ -66,10 +88,10 @@ jobs:
             echo "${SDK_ROOT}/platform-tools"
           } >> "$GITHUB_PATH"
 
-          echo "Commandline-tools installed at: ${SDK_ROOT}/cmdline-tools/latest"
+          echo "cmdline-tools ready at: ${SDK_ROOT}/cmdline-tools/latest"
           "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --version || true
 
-      # 接受许可证 + 分别安装平台与构建工具（带重试；不使用 pipefail，避免 yes | ... 的 Broken pipe 误报）
+      # 接受许可证 + 分别安装平台与构建工具（容错+重试，规避 Broken pipe/偶发非零返回码）
       - name: Accept licenses & install Android packages
         shell: bash
         env:
@@ -79,8 +101,7 @@ jobs:
           SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
 
           retry() {
-            # 用法：retry <cmd...>
-            local n=0; local max=3; local delay=5
+            local n=0 max=3 delay=5
             until "$@"; do
               code=$?
               n=$((n+1))
@@ -92,13 +113,10 @@ jobs:
                 return ${code}
               fi
             done
-            return 0
           }
 
-          # 接受 SDK 许可证：有时会显示 All accepted 却返回非零；容错继续
           yes | "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" --licenses || echo "licenses returned non-zero; continuing"
 
-          # 分别安装（独立参数），并重试
           retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' '${ANDROID_PLATFORM_PKG}'"
           retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' '${ANDROID_BUILD_TOOLS_PKG}'"
           retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' 'platform-tools'"
@@ -118,7 +136,7 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
         run: ./gradlew --no-daemon clean assembleDebug
 
-      # 收集 APK，扁平化重命名（下载的压缩包根目录就是 APK 文件）
+      # 收集 APK，扁平化重命名（下载压缩包根目录即 APK）
       - name: Collect & rename APKs (flat)
         id: collect
         shell: bash
