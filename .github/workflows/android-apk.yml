@@ -14,9 +14,8 @@ permissions:
   contents: read
 
 env:
-  JAVA_VERSION: "11"          # 如遇兼容性问题再改为 "17"
-  ANDROID_API_LEVEL: "34"
-  ANDROID_BUILD_TOOLS: "34.0.0"
+  # sdkmanager 现已要求 JDK 17+
+  JAVA_VERSION: "17"
 
 jobs:
   build-apk-debug:
@@ -27,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,13 +35,14 @@ jobs:
       - name: Setup Gradle (cache)
         uses: gradle/actions/setup-gradle@v3
 
+      # 该 action 只支持 'packages' 等少数入参；用逗号分隔多个包
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
-          build-tools: ${{ env.ANDROID_BUILD_TOOLS }}
+          accept-android-sdk-licenses: true
+          packages: platforms;android-34,build-tools;34.0.0
 
-      # 如果 Android 工程目录不是 project/，请把 working-directory 改成实际路径
+      # 若工程目录不是 project/，把 working-directory 改成你的实际路径
       - name: Grant execute permission for gradlew
         working-directory: project
         run: chmod +x ./gradlew
@@ -51,6 +51,7 @@ jobs:
         working-directory: project
         run: ./gradlew --no-daemon clean assembleDebug
 
+      # 收集所有模块的 Debug APK，复制到 artifacts/ 并语义化命名（单层目录）
       - name: Collect & rename APKs (flat)
         id: collect
         shell: bash
