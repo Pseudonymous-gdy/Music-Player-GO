@@ -6,23 +6,17 @@ on:
   pull_request:
     branches: [ "dguo" ]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
 env:
-  JAVA_VERSION: "11"          # 如遇兼容性问题再改为 "17"
+  JAVA_VERSION: "17"
   ANDROID_API_LEVEL: "34"
   ANDROID_BUILD_TOOLS: "34.0.0"
 
 jobs:
   build-apk-debug:
-    name: Build Debug APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,10 +33,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
-          build-tools: ${{ env.ANDROID_BUILD_TOOLS }}
+          packages: |
+            platforms;android-${{ env.ANDROID_API_LEVEL }}
+            build-tools;${{ env.ANDROID_BUILD_TOOLS }}
 
-      # 如果 Android 工程目录不是 project/，请把 working-directory 改成实际路径
+      # 如果你的 Android 工程在 project/ 目录，请把 working-directory 改为 project
       - name: Grant execute permission for gradlew
         working-directory: project
         run: chmod +x ./gradlew
@@ -51,6 +46,7 @@ jobs:
         working-directory: project
         run: ./gradlew --no-daemon clean assembleDebug
 
+      # 扫描所有模块的 debug APK，复制到 artifacts/ 并语义化命名
       - name: Collect & rename APKs (flat)
         id: collect
         shell: bash
@@ -60,16 +56,17 @@ jobs:
           shopt -s globstar nullglob
           count=0
           shortsha="${GITHUB_SHA::7}"
+          # 典型路径：<module>/build/outputs/apk/debug/*.apk
           for apk in project/**/build/outputs/apk/debug/*.apk; do
-            module="$(echo "$apk" | sed -E 's#project/([^/]+)/build/outputs/apk/debug/[^/]+$#\1#')"
-            [ -z "$module" ] && module="app"
+            # 取模块名（build 之前的目录名）
+            module="$(echo "$apk" | sed -E 's#.*/([^/]+)/build/outputs/apk/debug/[^/]+$#\1#')"
             out="artifacts/${module}-debug-${GITHUB_RUN_NUMBER}-${shortsha}.apk"
             cp -f "$apk" "$out"
             echo "collected: $out"
             count=$((count+1))
           done
           if [ "$count" -eq 0 ]; then
-            echo "没有找到 Debug APK，请确认模块路径与 assembleDebug 任务。" >&2
+            echo "没有找到 Debug APK，请确认模块路径与构建任务。" >&2
             exit 1
           fi
           echo "apk_count=$count" >> "$GITHUB_OUTPUT"
