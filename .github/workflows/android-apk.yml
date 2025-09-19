@@ -14,8 +14,9 @@ permissions:
   contents: read
 
 env:
-  # sdkmanager 现已要求 JDK 17+
-  JAVA_VERSION: "17"
+  JAVA_VERSION: "17"   # sdkmanager 需 JDK 17+
+  ANDROID_PLATFORM: "platforms;android-34"
+  ANDROID_BUILD_TOOLS: "build-tools;34.0.0"
 
 jobs:
   build-apk-debug:
@@ -35,14 +36,38 @@ jobs:
       - name: Setup Gradle (cache)
         uses: gradle/actions/setup-gradle@v3
 
-      # 该 action 只支持 'packages' 等少数入参；用逗号分隔多个包
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-          packages: platforms;android-34,build-tools;34.0.0
+      # 不再依赖 action 的 packages 解析，手动用 sdkmanager 安装
+      - name: Install Android SDK packages
+        shell: bash
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
 
-      # 若工程目录不是 project/，把 working-directory 改成你的实际路径
+          # 找到可用的 sdkmanager 可执行文件
+          if [ -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          else
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -r | head -n1 || true)"
+          fi
+
+          if [ -z "${SDKMANAGER:-}" ] || [ ! -x "$SDKMANAGER" ]; then
+            echo "sdkmanager 未找到，正在下载 commandline-tools ..." >&2
+            mkdir -p "$SDK_ROOT/cmdline-tools"
+            curl -fsSL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+            mv /tmp/cmdline-tools/cmdline-tools "$SDK_ROOT/cmdline-tools/latest"
+            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          fi
+
+          # 接受许可证（需要 JDK 17）
+          yes | "$SDKMANAGER" --licenses
+
+          # 安装平台与构建工具（分别作为独立参数传入）
+          "$SDKMANAGER" "$ANDROID_PLATFORM" "$ANDROID_BUILD_TOOLS" "platform-tools"
+
+      # 如果 Android 工程目录不是 project/，把 working-directory 改为实际路径
       - name: Grant execute permission for gradlew
         working-directory: project
         run: chmod +x ./gradlew
@@ -51,7 +76,7 @@ jobs:
         working-directory: project
         run: ./gradlew --no-daemon clean assembleDebug
 
-      # 收集所有模块的 Debug APK，复制到 artifacts/ 并语义化命名（单层目录）
+      # 收集 APK 到扁平目录并语义化命名
       - name: Collect & rename APKs (flat)
         id: collect
         shell: bash
