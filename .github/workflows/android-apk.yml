@@ -14,11 +14,10 @@ permissions:
   contents: read
 
 env:
-  # sdkmanager 需要 JDK 17+
-  JAVA_VERSION: "17"
-  ANDROID_SDK_ROOT: "${{ runner.home }}/android-sdk"
-  ANDROID_PLATFORM_PKG: "platforms;android-34"
-  ANDROID_BUILD_TOOLS_PKG: "build-tools;34.0.0"
+  JAVA_VERSION: "17"                              # sdkmanager 需要 JDK 17+
+  ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+  ANDROID_PLATFORM_PKG: "platforms;android-34"    # 如 compileSdkVersion 不是 34，请改这里
+  ANDROID_BUILD_TOOLS_PKG: "build-tools;34.0.0"   # 同步改成匹配版本
 
 jobs:
   build-apk-debug:
@@ -35,14 +34,14 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Gradle (cache)
+      - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # 手动安装最新 commandline-tools 到 $HOME/android-sdk（避免系统里旧版本导致 XML v4 报警）
+      # 手动安装最新 commandline-tools 到工作区，避免系统里旧版本导致 XML v4 报警
       - name: Install Android commandline-tools (latest)
         shell: bash
         run: |
-          set -euo pipefail
+          set -eu
           SDK_ROOT="${ANDROID_SDK_ROOT}"
           mkdir -p "${SDK_ROOT}/cmdline-tools"
 
@@ -53,11 +52,11 @@ jobs:
           rm -rf /tmp/cmdline-tools && mkdir -p /tmp/cmdline-tools
           unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
 
-          # zip 内部目录名就是 cmdline-tools
+          # 压缩包内目录名为 cmdline-tools
           rm -rf "${SDK_ROOT}/cmdline-tools/latest"
           mv /tmp/cmdline-tools/cmdline-tools "${SDK_ROOT}/cmdline-tools/latest"
 
-          # 暴露 PATH & 环境变量给后续 steps
+          # 暴露 PATH & 环境变量给后续步骤
           {
             echo "ANDROID_SDK_ROOT=${SDK_ROOT}"
             echo "ANDROID_HOME=${SDK_ROOT}"
@@ -68,47 +67,46 @@ jobs:
           } >> "$GITHUB_PATH"
 
           echo "Commandline-tools installed at: ${SDK_ROOT}/cmdline-tools/latest"
+          "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --version || true
 
-      # 接受许可证 + 分别安装平台与构建工具（带重试；解决偶发 Broken pipe/非零返回码）
+      # 接受许可证 + 分别安装平台与构建工具（带重试；不使用 pipefail，避免 yes | ... 的 Broken pipe 误报）
       - name: Accept licenses & install Android packages
         shell: bash
         env:
           SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
-          set -euo pipefail
+          set -eu
           SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
 
-          # 简单重试函数
           retry() {
-            local n=0
-            local try=3
-            local delay=5
+            # 用法：retry <cmd...>
+            local n=0; local max=3; local delay=5
             until "$@"; do
-              exit_code=$?
+              code=$?
               n=$((n+1))
-              if [ $n -lt $try ]; then
-                echo "Command failed with exit ${exit_code}. Retrying ($n/$try) in ${delay}s..."
+              if [ $n -lt $max ]; then
+                echo "Command failed (exit ${code}). Retrying ${n}/${max} in ${delay}s..."
                 sleep ${delay}
               else
-                echo "Command failed after ${try} attempts."
-                return ${exit_code}
+                echo "Command failed after ${max} attempts."
+                return ${code}
               fi
             done
             return 0
           }
 
-          # 许可证（可能打印 Broken pipe/返回非零，容错继续）
+          # 接受 SDK 许可证：有时会显示 All accepted 却返回非零；容错继续
           yes | "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" --licenses || echo "licenses returned non-zero; continuing"
 
-          # 分别安装，避免被当成一个包
-          retry yes | "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" "${ANDROID_PLATFORM_PKG}"
-          retry yes | "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" "${ANDROID_BUILD_TOOLS_PKG}"
-          retry yes | "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" "platform-tools"
+          # 分别安装（独立参数），并重试
+          retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' '${ANDROID_PLATFORM_PKG}'"
+          retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' '${ANDROID_BUILD_TOOLS_PKG}'"
+          retry bash -lc "yes | '${SDKMANAGER}' --sdk_root='${SDK_ROOT}' 'platform-tools'"
 
           echo "Installed packages:"
           "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" --list_installed || true
 
-      # 如果 Android 工程目录不是 project/，请把 working-directory 改成实际路径
+      # 如果 Android 工程目录不是 project/，把 working-directory 改为实际路径
       - name: Grant execute permission for gradlew
         working-directory: project
         run: chmod +x ./gradlew
@@ -120,12 +118,12 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
         run: ./gradlew --no-daemon clean assembleDebug
 
-      # 收集 APK，扁平化重命名，方便下载识别
+      # 收集 APK，扁平化重命名（下载的压缩包根目录就是 APK 文件）
       - name: Collect & rename APKs (flat)
         id: collect
         shell: bash
         run: |
-          set -euo pipefail
+          set -eu
           mkdir -p artifacts
           shopt -s globstar nullglob
           count=0
