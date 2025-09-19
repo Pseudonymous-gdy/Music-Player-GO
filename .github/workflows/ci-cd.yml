@@ -1,0 +1,173 @@
+name: test-and-deploy
+
+on:
+  push:
+    branches: [ "dguo", "main", "master" ]
+  pull_request:
+    branches: [ "dguo", "main", "master" ]
+
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "18.x"
+  GO_VERSION: "1.22.x"
+  JAVA_VERSION: "17"
+
+jobs:
+  # ---------------------------
+  # Node.js: npm install / test
+  # ---------------------------
+  test-node:
+    name: Node tests
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('package.json') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Test
+        run: |
+          if npm run | grep -q " test"; then npm test --silent; else echo "No npm test script, skipping"; fi
+
+      - name: Run local jshint action (if present)
+        if: ${{ hashFiles('.github/workflows/jshint/**') != '' }}
+        uses: ./.github/workflows/jshint
+
+  # ---------------------------
+  # Go: go test ./...
+  # ---------------------------
+  test-go:
+    name: Go tests
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('go.mod') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Test
+        run: go test ./... -v
+
+  # ---------------------------
+  # Android/Gradle build
+  # ---------------------------
+  build-android:
+    name: Android build
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('gradlew') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build (assembleDebug)
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK artifact
+        if: ${{ hashFiles('app/build/outputs/apk/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: |
+            **/build/outputs/apk/**/*.apk
+            **/build/outputs/bundle/**/*.aab
+
+  # ---------------------------
+  # Deploy:
+  #   1) Dockerfile -> GHCR
+  #   2) else Node -> GitHub Pages (if build/dist 存在)
+  # ---------------------------
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [test-node, test-go, build-android]
+    if: ${{ github.ref == 'refs/heads/dguo' || startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- 路径 1：Docker 发布到 GHCR（若存在 Dockerfile）----
+      - name: Log in to GHCR
+        if: ${{ hashFiles('Dockerfile') != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Docker image
+        if: ${{ hashFiles('Dockerfile') != '' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]'):${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]'):latest
+
+      # ---- 路径 2：Node 静态站点部署到 Pages（若存在 package.json）----
+      - name: Setup Node (for build)
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install deps (for build)
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Build site (if script exists)
+        id: build_site
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        run: |
+          if npm run | grep -q " build"; then
+            npm run build
+          else
+            echo "No build script; skipping"
+          fi
+
+      - name: Setup Pages
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact (dist or build)
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: |
+            dist
+            build
+          if-no-files-found: ignore
+
+      - name: Deploy to GitHub Pages
+        if: ${{ hashFiles('package.json') != '' && hashFiles('Dockerfile') == '' }}
+        id: deployment
+        uses: actions/deploy-pages@v4
