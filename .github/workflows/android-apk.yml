@@ -3,17 +3,17 @@ name: Android CI
 on:
   push:
     branches: [ "master", "dguo" ]
-    tags:     [ "v*" ]        # 打 tag 时触发 Release
+    tags:     [ "v*" ]              # 打 tag 时触发 Release
   pull_request:
   workflow_dispatch:
     inputs:
-        release_version: 0.0.1
-          description: "Release 0.0.1 (apk file built)"
-          required: false
-          default: ""
+      release_version:
+        description: "Release 版本号（例：v0.0.1；留空则仅构建 Debug）"
+        required: false
+        default: ""
 
 permissions:
-  contents: write             # 发布 Release 需要写权限
+  contents: write                   # 发布 Release 需要写权限
 
 jobs:
   build:
@@ -23,10 +23,10 @@ jobs:
       cancel-in-progress: true
 
     env:
-      ANDROID_DIR: project    # Android 工程目录（含 gradlew）
-      APP_MODULE: app         # 主模块名
-      ANDROID_API: "34"       # 如 compileSdkVersion 不是 34，请改
-      BUILD_TOOLS: "34.0.0"   # 同步到匹配版本（如 33.0.2）
+      ANDROID_DIR: project          # Android 工程目录（含 gradlew）
+      APP_MODULE: app               # 主模块名
+      ANDROID_API: "34"             # 如 compileSdkVersion 不是 34，请改
+      BUILD_TOOLS: "34.0.0"         # 同步到匹配版本（如 33.0.2）
 
     steps:
       - name: Checkout
@@ -46,56 +46,69 @@ jobs:
         with:
           accept-android-sdk-licenses: true
 
-      - name: Setup Gradle
+      - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
       - name: Make Gradle wrapper executable
         working-directory: ${{ env.ANDROID_DIR }}
         run: chmod +x ./gradlew
 
+      # 安装所需 SDK 包（容错，不因 sdkmanager 偶发返回码而失败）
       - name: Ensure SDK packages (platforms/build-tools)
         run: |
+          set +e
           SDKMANAGER=$(which sdkmanager || echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager")
           echo "Using sdkmanager: ${SDKMANAGER}"
-          # 先尝试无交互安装；若因许可证导致失败则自动回退为 auto-yes
-          "${SDKMANAGER}" --install \
+          yes | "${SDKMANAGER}" --licenses
+          yes | "${SDKMANAGER}" --install \
             "platforms;android-${{ env.ANDROID_API }}" \
             "build-tools;${{ env.BUILD_TOOLS }}" \
-            "platform-tools" \
-          || ( echo "Retrying with auto-yes..." && yes | "${SDKMANAGER}" --install \
-            "platforms;android-${{ env.ANDROID_API }}" \
-            "build-tools;${{ env.BUILD_TOOLS }}" \
-            "platform-tools" || true )
+            "platform-tools"
+          set -e
 
       - name: Show Gradle info
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew -v
 
-      # ------------ Debug 分支（非 tag）------------
+      # -------- Debug（非 tag，且未填写 release_version）--------
       - name: Build Debug APK
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || github.event.inputs.release_version == '') }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleDebug
 
       - name: Upload Debug artifact
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || github.event.inputs.release_version == '') }}
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ github.run_number }}
           path: ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # ------------ Release（打 tag）------------
+      # -------- Release（打 tag 或手动输入 release_version）--------
       - name: Build Release (APK/AAB + mapping)
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleRelease :${{ env.APP_MODULE }}:bundleRelease
 
-      - name: Upload assets to GitHub Release
+      # 打 tag 情况：用当前 tag 发布
+      - name: Create/Update GitHub Release (tag push)
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/release/*.apk
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/bundle/release/*.aab
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/mapping/release/mapping.txt
+
+      # 手动触发：用输入的版本号创建/更新 Release（无需预先打 tag）
+      - name: Create/Update GitHub Release (manual)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_version }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: |
             ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/release/*.apk
