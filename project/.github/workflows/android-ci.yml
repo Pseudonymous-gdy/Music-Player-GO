@@ -1,10 +1,16 @@
 name: Android CI
+
 on:
   push:
-    branches: [ main ]
+    branches: ['**']          # 任何分支 push 都触发（含 hliu）
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: ['**']          # 任何 PR 都触发
+  workflow_dispatch:          # 允许手动运行
+
+
+defaults:
+  run:
+    working-directory: project
 
 jobs:
   build:
@@ -12,15 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 这一步仍在仓库根执行，需要单独 cd
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        working-directory: project
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
           cache: gradle
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
 
       - name: Build (Debug)
         run: ./gradlew assembleDebug
@@ -32,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: project/app/build/outputs/apk/debug/*.apk
