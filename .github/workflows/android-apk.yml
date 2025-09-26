@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "dguo" ]
     tags:     [ "v*" ]        # 打 tag 时触发 Release
   pull_request:
   workflow_dispatch:
