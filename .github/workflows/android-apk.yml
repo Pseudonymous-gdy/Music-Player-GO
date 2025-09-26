@@ -6,6 +6,11 @@ on:
     tags:     [ "v*" ]        # 打 tag 时触发 Release
   pull_request:
   workflow_dispatch:
+    inputs:
+        release_version: 0.0.1
+          description: "Release 0.0.1 (apk file built)"
+          required: false
+          default: ""
 
 permissions:
   contents: write             # 发布 Release 需要写权限
