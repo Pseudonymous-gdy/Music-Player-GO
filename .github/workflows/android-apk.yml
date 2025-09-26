@@ -2,13 +2,13 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master", "dguo" ]     # 如需 dguo 分支，改为 ["master", "dguo"]
-    tags:     [ "v*" ]         # 打 tag 触发发布
+    branches: [ "master" ]
+    tags:     [ "v*" ]        # 打 tag 时触发 Release
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write              # 发布 Release 需要写权限
+  contents: write             # 发布 Release 需要写权限
 
 jobs:
   build:
@@ -18,10 +18,10 @@ jobs:
       cancel-in-progress: true
 
     env:
-      ANDROID_DIR: project     # Android 工程目录（含 gradlew）
-      APP_MODULE: app          # 主模块名（用于收集产物）
-      ANDROID_API: "34"        # 如 compileSdkVersion 不是 34，自行修改
-      BUILD_TOOLS: "34.0.0"    # 同步到匹配版本（如 33.0.2）
+      ANDROID_DIR: project    # Android 工程目录（含 gradlew）
+      APP_MODULE: app         # 主模块名
+      ANDROID_API: "34"       # 如 compileSdkVersion 不是 34，请改
+      BUILD_TOOLS: "34.0.0"   # 同步到匹配版本（如 33.0.2）
 
     steps:
       - name: Checkout
@@ -36,10 +36,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK (cmdline-tools)
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
 
-      - name: Setup Gradle cache
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Make Gradle wrapper executable
@@ -47,18 +49,24 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Ensure SDK packages (platforms/build-tools)
-        shell: bash
         run: |
-          set -e
-          which sdkmanager
-          yes | sdkmanager --licenses || true
-          yes | sdkmanager "platforms;android-${{ env.ANDROID_API }}" "build-tools;${{ env.BUILD_TOOLS }}" "platform-tools"
+          SDKMANAGER=$(which sdkmanager || echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager")
+          echo "Using sdkmanager: ${SDKMANAGER}"
+          # 先尝试无交互安装；若因许可证导致失败则自动回退为 auto-yes
+          "${SDKMANAGER}" --install \
+            "platforms;android-${{ env.ANDROID_API }}" \
+            "build-tools;${{ env.BUILD_TOOLS }}" \
+            "platform-tools" \
+          || ( echo "Retrying with auto-yes..." && yes | "${SDKMANAGER}" --install \
+            "platforms;android-${{ env.ANDROID_API }}" \
+            "build-tools;${{ env.BUILD_TOOLS }}" \
+            "platform-tools" || true )
 
       - name: Show Gradle info
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew -v
 
-      # --- Debug 构建：非 tag 触发 ---
+      # ------------ Debug 分支（非 tag）------------
       - name: Build Debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         working-directory: ${{ env.ANDROID_DIR }}
@@ -69,11 +77,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ github.run_number }}
-          path: |
-            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/debug/*.apk
+          path: ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
-      # --- Release 发布：打 tag 时触发 ---
-      - name: Build Release APK (and mapping)
+      # ------------ Release（打 tag）------------
+      - name: Build Release (APK/AAB + mapping)
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleRelease :${{ env.APP_MODULE }}:bundleRelease
@@ -82,7 +90,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}                           # 动态使用当前 tag
+          tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/release/*.apk
