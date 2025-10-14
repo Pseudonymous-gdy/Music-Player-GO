@@ -1,0 +1,116 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "master", "dguo" ]   # 常规 CI：构建 Debug
+    tags:     [ "v*" ]               # 打 tag：构建 Release 并发布
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "手动发布版本号（如 v0.0.1；留空仅构建 Debug 不发布）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write                    # 需要写权限发布 GitHub Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      ANDROID_DIR: project           # Android 工程目录（含 gradlew）
+      APP_MODULE: app                # 主模块名
+      ANDROID_API: "34"              # 如 compileSdkVersion 不是 34，请改
+      BUILD_TOOLS: "34.0.0"          # 同步到匹配版本（如 33.0.2）
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK (cmdline-tools)
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make Gradle wrapper executable
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: chmod +x ./gradlew
+
+      # 安装所需 SDK 包（容错，不因 sdkmanager 偶发返回码而失败）
+      - name: Ensure SDK packages (platforms/build-tools)
+        run: |
+          set +e
+          SDKMANAGER=$(which sdkmanager || echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager")
+          echo "Using sdkmanager: ${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --licenses
+          yes | "${SDKMANAGER}" --install \
+            "platforms;android-${{ env.ANDROID_API }}" \
+            "build-tools;${{ env.BUILD_TOOLS }}" \
+            "platform-tools"
+          set -e
+
+      - name: Show Gradle info
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: ./gradlew -v
+
+      # ---------- Debug（非发布场景）----------
+      - name: Build Debug APK
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || github.event.inputs.release_version == '') }}
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleDebug
+
+      - name: Upload Debug artifact
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || github.event.inputs.release_version == '') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.run_number }}
+          path: ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # ---------- Release（打 tag 或手动输入版本号）----------
+      - name: Build Release (APK/AAB + mapping)
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleRelease :${{ env.APP_MODULE }}:bundleRelease
+
+      # 打 tag 发布：使用当前 tag
+      - name: Create/Update GitHub Release (tag push)
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/release/*.apk
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/bundle/release/*.aab
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/mapping/release/mapping.txt
+
+      # 手动发布：用输入版本号创建/更新 Release（无需预先打 tag）
+      - name: Create/Update GitHub Release (manual)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_version }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: |
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/apk/release/*.apk
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/bundle/release/*.aab
+            ${{ env.ANDROID_DIR }}/${{ env.APP_MODULE }}/build/outputs/mapping/release/mapping.txt
