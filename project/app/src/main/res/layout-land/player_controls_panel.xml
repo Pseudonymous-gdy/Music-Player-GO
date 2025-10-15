@@ -107,6 +107,16 @@
                     android:background="?android:attr/actionBarItemBackground"
                     android:contentDescription="@string/favorites"
                     android:padding="8dp" />
+                <ImageButton
+                android:id="@+id/historyButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="?android:attr/actionBarItemBackground"
+                android:contentDescription="@string/queue"
+                android:padding="8dp"
+                app:srcCompat="@drawable/ic_queue_music" />
+                
             </LinearLayout>
 
             <com.google.android.material.progressindicator.LinearProgressIndicator

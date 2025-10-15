@@ -33,7 +33,7 @@ android {
         }
         debug {
             applicationIdSuffix ".debug"
-            resValue "string", "app_name", "@string/app_name_debug"
+            resValue "string", "app_name", "@string/app_name"
             debuggable true
         }
     }

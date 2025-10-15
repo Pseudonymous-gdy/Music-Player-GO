@@ -14,6 +14,7 @@ object GoConstants {
     const val SONGS_TAB = "SONGS_TAB"
     const val FOLDERS_TAB = "FOLDERS_TAB"
     const val SETTINGS_TAB = "SETTINGS_TAB"
+    const val HISTORY_TAB = "HISTORY_TAB"
 
     val DEFAULT_ACTIVE_FRAGMENTS =
         listOf(ARTISTS_TAB, ALBUM_TAB, SONGS_TAB, FOLDERS_TAB, SETTINGS_TAB)

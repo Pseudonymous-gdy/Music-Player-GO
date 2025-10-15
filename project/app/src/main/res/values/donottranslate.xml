@@ -3,7 +3,6 @@
 
     <!-- App name for debug and release flavors -->
     <string name="app_name_release" tools:ignore="UnusedResources">Music Player GO</string>
-    <string name="app_name_debug" tools:ignore="UnusedResources">MPGO debug</string>
 
     <!-- External links -->
     <string name="app_git">https://github.com/enricocid/Music-Player-GO</string>
