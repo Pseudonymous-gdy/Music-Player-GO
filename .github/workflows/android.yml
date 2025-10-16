@@ -2,7 +2,7 @@ name: Android CI
   
 on:
   push:
-    branches: [ Kumoris ]
+    branches: [ zlu ]
   pull_request:
     branches: [ main ]
 
