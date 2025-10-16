@@ -72,12 +72,12 @@ class GoPreferences(context: Context) {
 
     var activeTabsDef: List<String>
         get() = getObjectForType("active_tabs_def_pref", typeActiveTabs)
-            ?: GoConstants.DEFAULT_ACTIVE_FRAGMENTS
+            ?: (GoConstants.DEFAULT_ACTIVE_FRAGMENTS + GoConstants.HISTORY_TAB).distinct()
         set(value) = putObjectForType("active_tabs_def_pref", value, typeActiveTabs)
 
     var activeTabs: List<String>
         get() = getObjectForType("active_tabs_pref", typeActiveTabs)
-            ?: GoConstants.DEFAULT_ACTIVE_FRAGMENTS
+            ?: (GoConstants.DEFAULT_ACTIVE_FRAGMENTS + GoConstants.HISTORY_TAB).distinct()
         set(value) = putObjectForType("active_tabs_pref", value, typeActiveTabs)
 
     var onListEnded

@@ -2,7 +2,7 @@ name: Android CI
   
 on:
   push:
-    branches: [ hliu ]
+    branches: [ zlu ]
   pull_request:
     branches: [ main ]
 

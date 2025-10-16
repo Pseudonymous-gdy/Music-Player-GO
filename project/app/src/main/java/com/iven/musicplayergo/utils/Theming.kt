@@ -180,6 +180,7 @@ object Theming {
         GoConstants.ALBUM_TAB -> R.drawable.ic_library_music
         GoConstants.SONGS_TAB -> R.drawable.ic_music_note
         GoConstants.FOLDERS_TAB -> R.drawable.ic_folder_music
+        GoConstants.HISTORY_TAB -> R.drawable.ic_history
         else -> R.drawable.ic_settings
     }
 
@@ -189,6 +190,7 @@ object Theming {
         GoConstants.ALBUM_TAB -> R.string.albums
         GoConstants.SONGS_TAB -> R.string.songs
         GoConstants.FOLDERS_TAB -> R.string.folders
+        GoConstants.HISTORY_TAB -> R.string.play_history
         else -> R.string.settings
     }
 
