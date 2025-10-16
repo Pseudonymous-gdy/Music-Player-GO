@@ -17,62 +17,39 @@
         android:title="@string/sleeptimer"
         app:showAsAction="always"
         tools:ignore="AlwaysShowAction" />
-    
+
+    <item
+        android:id="@+id/action_clear_history"
+        android:icon="@drawable/ic_delete"
+        android:title="@string/history_clear"
+        app:showAsAction="never" />
+
     <group android:id="@+id/sorting">
 
         <item
             android:id="@+id/default_sorting"
             android:orderInCategory="0"
-            android:title="@string/sorting_pref_default"
+            android:title="@string/history_sort_recent"
             app:showAsAction="never" />
 
         <item
             android:id="@+id/ascending_sorting"
             android:orderInCategory="1"
-            android:title="@string/sorting_pref_ascending"
+            android:title="@string/history_sort_title_asc"
             app:showAsAction="never" />
 
         <item
             android:id="@+id/descending_sorting"
             android:orderInCategory="2"
-            android:title="@string/sorting_pref_descending"
+            android:title="@string/history_sort_title_desc"
             app:showAsAction="never" />
 
         <item
             android:id="@+id/date_added_sorting"
             android:orderInCategory="5"
-            android:title="@string/sorting_pref_date_added"
+            android:title="@string/history_sort_oldest"
             app:showAsAction="never" />
 
-        <item
-            android:id="@+id/date_added_sorting_inv"
-            android:orderInCategory="6"
-            android:title="@string/sorting_pref_date_added_inv"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/artist_sorting"
-            android:orderInCategory="7"
-            android:title="@string/sorting_pref_artist"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/artist_sorting_inv"
-            android:orderInCategory="8"
-            android:title="@string/sorting_pref_artist_inv"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/album_sorting"
-            android:orderInCategory="9"
-            android:title="@string/sorting_pref_album"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/album_sorting_inv"
-            android:orderInCategory="10"
-            android:title="@string/sorting_pref_album_inv"
-            app:showAsAction="never" />
     </group>
 
 </menu>

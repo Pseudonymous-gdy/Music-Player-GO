@@ -3,6 +3,7 @@ package com.iven.musicplayergo
 import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import com.iven.musicplayergo.models.HistoryEntry
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.models.NotificationAction
 import com.iven.musicplayergo.models.SavedEqualizerSettings
@@ -22,6 +23,9 @@ class GoPreferences(context: Context) {
 
     // favorites is a list of Music
     private val typeFavorites = Types.newParameterizedType(List::class.java, Music::class.java)
+
+    // history entries is a list of HistoryEntry
+    private val typeHistoryEntries = Types.newParameterizedType(List::class.java, HistoryEntry::class.java)
 
     // sortings is a list of Sorting
     private val typeSorting = Types.newParameterizedType(List::class.java, Sorting::class.java)
@@ -53,6 +57,10 @@ class GoPreferences(context: Context) {
     var queue: List<Music>?
         get() = getObjectForType("queue_songs_pref", typeFavorites)
         set(value) = putObjectForType("queue_songs_pref", value, typeFavorites)
+
+    var playHistory: List<HistoryEntry>?
+        get() = getObjectForType("play_history_pref", typeHistoryEntries)
+        set(value) = putObjectForType("play_history_pref", value, typeHistoryEntries)
 
     var isQueue: Music?
         get() = getObjectForClass("is_queue_pref", Music::class.java)

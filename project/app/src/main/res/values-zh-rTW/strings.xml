@@ -182,4 +182,13 @@
     <string name="grey">灰色</string>
     <string name="blue_grey">藍灰色</string>
     <string name="locale_punjabi">旁遮普語</string>
+    <string name="history_sort_recent">最近播放</string>
+    <string name="history_sort_oldest">最早播放</string>
+    <string name="history_sort_title_asc">標題 A-Z</string>
+    <string name="history_sort_title_desc">標題 Z-A</string>
+    <string name="history_clear">清除播放歷程</string>
+    <string name="history_empty">尚無播放歷程。</string>
+    <string name="history_cleared">播放歷程已清除。</string>
+    <string name="history_no_results">沒有符合搜尋的結果。</string>
+    <string name="history_more_options">歷程項目更多操作</string>
 </resources>
