@@ -85,4 +85,13 @@
     <string name="sorting_pref_artist_inv">아티스트 내림차순</string>
     <string name="sorting_pref_artist">아티스트 오름차순</string>
     <string name="sorting_pref_date_added_inv">오래된순</string>
+    <string name="history_sort_recent">Recently played</string>
+    <string name="history_sort_oldest">Oldest played</string>
+    <string name="history_sort_title_asc">Title A-Z</string>
+    <string name="history_sort_title_desc">Title Z-A</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_empty">No play history yet.</string>
+    <string name="history_cleared">History cleared.</string>
+    <string name="history_no_results">No matches for your search.</string>
+    <string name="history_more_options">History item options</string>
 </resources>

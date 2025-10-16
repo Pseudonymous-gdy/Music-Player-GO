@@ -8,52 +8,52 @@
     android:layout_height="match_parent"
     tools:context=".fragments.HistoryFragment">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:liftOnScroll="true"
-        app:liftOnScrollTargetViewId="@id/allMusicRv">
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/search_toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:elevation="0dp"
-        android:theme="@style/ToolbarStyle"
-        app:collapseIcon="@drawable/ic_navigate_before"
-        app:navigationIcon="@drawable/ic_navigate_before"
-        app:subtitleTextAppearance="@style/ToolbarStyle.Subtitle"
-        app:titleTextAppearance="@style/ToolbarStyle.Title"
-        app:titleTextColor="?android:attr/textColorPrimary"
-        tools:title="History" />
-
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/allMusicRv"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:clipToPadding="false"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="88dp"
-        android:overScrollMode="never"
-        android:scrollbars="none"
-        tools:listitem="@layout/album_item"
-        tools:itemCount="8"
-        tools:spanCount="2"/>
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/search_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/toolbar_bg"
+            android:elevation="@dimen/search_bar_elevation"
+            android:theme="@style/ToolbarStyle"
+            app:collapseIcon="@drawable/ic_navigate_before"
+            app:navigationIcon="@drawable/ic_close"
+            app:subtitleTextAppearance="@style/ToolbarStyle.Subtitle"
+            app:titleTextAppearance="@style/ToolbarStyle.Title"
+            app:titleTextColor="?android:attr/textColorPrimary"
+            tools:title="History" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/allMusicRv"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="88dp"
+            android:overScrollMode="never"
+            android:scrollbars="none"
+            tools:itemCount="8"
+            tools:listitem="@layout/album_item"
+            tools:spanCount="2" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/empty_history"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:text="@string/history_empty"
         android:visibility="gone"
         tools:visibility="visible"
-        tools:text="暂无播放历史" />
+        tools:text="@string/history_empty" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/shuffle_fab"

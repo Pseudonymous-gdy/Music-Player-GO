@@ -181,4 +181,13 @@
     <string name="category_ui">Gebruikersinterface</string>
     <string name="locale_punjabi">Punjabi</string>
     <string name="eq_pref_sum">Gebruik van de ingebouwde equalizer afdwingen</string>
+    <string name="history_sort_recent">Recently played</string>
+    <string name="history_sort_oldest">Oldest played</string>
+    <string name="history_sort_title_asc">Title A-Z</string>
+    <string name="history_sort_title_desc">Title Z-A</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_empty">No play history yet.</string>
+    <string name="history_cleared">History cleared.</string>
+    <string name="history_no_results">No matches for your search.</string>
+    <string name="history_more_options">History item options</string>
 </resources>
