@@ -11,7 +11,7 @@
         android:strokeColor="@color/widgets_color"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:strokeWidth="1.5"/>
+        android:strokeWidth="2.5"/>
 
     <!-- clock circle + arrow (filled, themed color) -->
     <path
