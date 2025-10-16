@@ -147,18 +147,17 @@ jobs:
             fi
           fi
 
-          # 生成临时 keystore
+          # 生成临时 keystore（PKCS12，store/key 使用相同密码，避免 apksigner 密码不一致问题）
           KS="$RUNNER_TEMP/temp-release.keystore"
           ALIAS="temp"
           if command -v openssl >/dev/null 2>&1; then
-            STOREPASS=$(openssl rand -hex 16)
-            KEYPASS=$(openssl rand -hex 16)
+            PASS=$(openssl rand -hex 16)
           else
-            STOREPASS=$(head -c 16 /dev/urandom | xxd -p || echo tempStorePass123)
-            KEYPASS=$(head -c 16 /dev/urandom | xxd -p || echo tempKeyPass123)
+            PASS=$(head -c 16 /dev/urandom | xxd -p || echo tempPass123)
           fi
           keytool -genkeypair -v \
-            -keystore "$KS" -storepass "$STOREPASS" -keypass "$KEYPASS" \
+            -storetype PKCS12 \
+            -keystore "$KS" -storepass "$PASS" -keypass "$PASS" \
             -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 3650 \
             -dname "CN=Temporary,O=CI,OU=CI,L=,S=,C=US"
 
@@ -174,8 +173,8 @@ jobs:
             "$APKSIGNER" sign \
               --ks "$KS" \
               --ks-key-alias "$ALIAS" \
-              --ks-pass pass:"$STOREPASS" \
-              --key-pass pass:"$KEYPASS" \
+              --ks-pass pass:"$PASS" \
+              --key-pass pass:"$PASS" \
               "$APK"
             echo "Verifying signature for $APK"
             "$APKSIGNER" verify -v "$APK"
