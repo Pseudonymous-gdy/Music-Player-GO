@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.OpenableColumns
 import android.widget.Toast
+import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -40,6 +41,7 @@ import com.iven.musicplayergo.fragments.AllMusicFragment
 import com.iven.musicplayergo.fragments.DetailsFragment
 import com.iven.musicplayergo.fragments.ErrorFragment
 import com.iven.musicplayergo.fragments.MusicContainersFragment
+import com.iven.musicplayergo.fragments.HistoryFragment
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.player.MediaPlayerHolder
 import com.iven.musicplayergo.player.MediaPlayerInterface
@@ -67,6 +69,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     private var mAlbumsFragment: MusicContainersFragment? = null
     private var mSettingsFragment: SettingsFragment? = null
     private var mDetailsFragment: DetailsFragment? = null
+    private var mHistoryFragment: HistoryFragment? = null
 
     // Booleans
     private val sDetailsFragmentExpanded get() = supportFragmentManager.isFragment(GoConstants.DETAILS_FRAGMENT_TAG)
@@ -326,6 +329,14 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
             // Be sure that prefs are initialized
             GoPreferences.initPrefs(this)
+            // Ensure HISTORY_TAB is present in activeTabs (migration for existing users)
+            run {
+                val tabs = mGoPreferences.activeTabs.toMutableList()
+                if (!tabs.contains(GoConstants.HISTORY_TAB)) {
+                    tabs.add(GoConstants.HISTORY_TAB)
+                    mGoPreferences.activeTabs = tabs
+                }
+            }
 
             if (!sLaunchedByTile) {
 
@@ -432,6 +443,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
             GoConstants.ALBUM_TAB -> mAlbumsFragment = MusicContainersFragment.newInstance(GoConstants.ALBUM_VIEW)
             GoConstants.SONGS_TAB -> mAllMusicFragment = AllMusicFragment.newInstance()
             GoConstants.FOLDERS_TAB -> mFoldersFragment = MusicContainersFragment.newInstance(GoConstants.FOLDER_VIEW)
+            GoConstants.HISTORY_TAB -> mHistoryFragment = HistoryFragment.newInstance()
             else -> mSettingsFragment = SettingsFragment.newInstance()
         }
         return handleOnNavigationItemSelected(position)
@@ -442,6 +454,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         GoConstants.ALBUM_TAB -> mAlbumsFragment ?: initFragmentAt(index)
         GoConstants.SONGS_TAB -> mAllMusicFragment ?: initFragmentAt(index)
         GoConstants.FOLDERS_TAB -> mFoldersFragment ?: initFragmentAt(index)
+        GoConstants.HISTORY_TAB -> mHistoryFragment ?: initFragmentAt(index)
         else -> mSettingsFragment ?: initFragmentAt(index)
     }
 
@@ -554,6 +567,23 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         }
 
         onFavoritesUpdated(clear = false)
+
+        mPlayerControlsPanelBinding.root.findViewById<View>(R.id.historyButton)?.apply {
+            safeClickListener {
+                // Navigate to the History tab if it is enabled in activeTabs; otherwise show a hint
+                val tabs = mGoPreferences.activeTabs.toList()
+                val idx = tabs.indexOf(GoConstants.HISTORY_TAB)
+                if (idx >= 0) {
+                    mMainActivityBinding.viewPager2.currentItem = idx
+                } else {
+                    Toast.makeText(this@MainActivity, R.string.play_history, Toast.LENGTH_SHORT).show()
+                }
+            }
+            setOnLongClickListener {
+                // 与其他按钮风格一致，长按预留（目前无操作）
+                return@setOnLongClickListener true
+            }
+        }
 
         with(mPlayerControlsPanelBinding.playingSongContainer) {
             safeClickListener {
@@ -866,6 +896,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         mAlbumsFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mAllMusicFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mFoldersFragment?.tintSleepTimerIcon(enabled = isEnabled)
+        mHistoryFragment?.tintSleepTimerIcon(enabled = isEnabled)
     }
 
     override fun onAddToQueue(song: Music?) {

@@ -630,24 +630,25 @@ class DetailsFragment : Fragment(), SearchView.OnQueryTextListener {
 
                 with(binding) {
 
-                    album.text = itemAlbum?.title
+                    album?.text = itemAlbum?.title
 
-                    year.text = itemAlbum?.year
-                    totalDuration.text = itemAlbum?.totalDuration?.toFormattedDuration(
+                    year?.text = itemAlbum?.year
+                    totalDuration?.text = itemAlbum?.totalDuration?.toFormattedDuration(
                         isAlbum = true,
                         isSeekBar = false
                     )
 
-                    root.strokeWidth = if (mSelectedAlbum?.title == itemAlbum?.title) {
-                        resources.getDimensionPixelSize(R.dimen.album_stroke)
-                    } else {
-                        0
-                    }
+                    (root as? com.google.android.material.card.MaterialCardView)?.strokeWidth =
+                        if (mSelectedAlbum?.title == itemAlbum?.title) {
+                            resources.getDimensionPixelSize(R.dimen.album_stroke)
+                        } else {
+                            0
+                        }
 
-                    image.background.alpha = Theming.getAlbumCoverAlpha(requireContext())
+                    image?.background?.alpha = Theming.getAlbumCoverAlpha(requireContext())
 
                     itemAlbum?.music?.first()?.albumId?.waitForCover(requireContext()) { bmp, error ->
-                        image.loadWithError(bmp, error, R.drawable.ic_music_note_cover_alt)
+                        image?.loadWithError(bmp, error, R.drawable.ic_music_note_cover_alt)
                     }
 
                     root.setOnClickListener {
