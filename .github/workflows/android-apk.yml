@@ -117,6 +117,70 @@ jobs:
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleRelease :${{ env.APP_MODULE }}:bundleRelease
 
+      # 若未配置正式签名（Secrets 不存在），使用临时 keystore 对 Release APK 进行签名以便安装
+      - name: Temporary sign Release APKs when no secrets
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
+        shell: bash
+        env:
+          BUILD_TOOLS: ${{ env.BUILD_TOOLS }}
+          ANDROID_DIR: ${{ env.ANDROID_DIR }}
+          APP_MODULE: ${{ env.APP_MODULE }}
+        run: |
+          set -euo pipefail
+          # 如果已经配置了正式签名环境变量，则跳过临时签名
+          if [[ -n "${SIGNING_KEYSTORE_PATH:-}" && -n "${SIGNING_KEYSTORE_PASSWORD:-}" && -n "${SIGNING_KEY_ALIAS:-}" && -n "${SIGNING_KEY_PASSWORD:-}" ]]; then
+            echo "Signing secrets detected; skip temporary signing."
+            exit 0
+          fi
+
+          echo "No signing secrets; performing temporary signing for installable APKs."
+          # 解析 apksigner 路径
+          APKSIGNER=$(command -v apksigner || true)
+          if [[ -z "$APKSIGNER" ]]; then
+            if [[ -n "${ANDROID_SDK_ROOT:-}" && -x "$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner" ]]; then
+              APKSIGNER="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner"
+            elif [[ -x "/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner" ]]; then
+              APKSIGNER="/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner"
+            else
+              echo "apksigner not found" >&2
+              exit 1
+            fi
+          fi
+
+          # 生成临时 keystore
+          KS="$RUNNER_TEMP/temp-release.keystore"
+          ALIAS="temp"
+          if command -v openssl >/dev/null 2>&1; then
+            STOREPASS=$(openssl rand -hex 16)
+            KEYPASS=$(openssl rand -hex 16)
+          else
+            STOREPASS=$(head -c 16 /dev/urandom | xxd -p || echo tempStorePass123)
+            KEYPASS=$(head -c 16 /dev/urandom | xxd -p || echo tempKeyPass123)
+          fi
+          keytool -genkeypair -v \
+            -keystore "$KS" -storepass "$STOREPASS" -keypass "$KEYPASS" \
+            -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Temporary,O=CI,OU=CI,L=,S=,C=US"
+
+          APK_DIR="$ANDROID_DIR/$APP_MODULE/build/outputs/apk/release"
+          shopt -s nullglob
+          APKS=("$APK_DIR"/*.apk)
+          if [[ ${#APKS[@]} -eq 0 ]]; then
+            echo "No release APKs found to sign in $APK_DIR" >&2
+            exit 1
+          fi
+          for APK in "${APKS[@]}"; do
+            echo "Signing $APK with temporary keystore..."
+            "$APKSIGNER" sign \
+              --ks "$KS" \
+              --ks-key-alias "$ALIAS" \
+              --ks-pass pass:"$STOREPASS" \
+              --key-pass pass:"$KEYPASS" \
+              "$APK"
+            echo "Verifying signature for $APK"
+            "$APKSIGNER" verify -v "$APK"
+          done
+
       # 打 tag 发布：使用当前 tag
       - name: Create/Update GitHub Release (tag push)
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
