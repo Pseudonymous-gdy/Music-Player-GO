@@ -25,8 +25,8 @@ jobs:
     env:
       ANDROID_DIR: project           # Android 工程目录（含 gradlew）
       APP_MODULE: app                # 主模块名
-      ANDROID_API: "34"              # 如 compileSdkVersion 不是 34，请改
-      BUILD_TOOLS: "34.0.0"          # 同步到匹配版本（如 33.0.2）
+      ANDROID_API: "33"              # 与 app 的 compileSdkVersion 对齐
+      BUILD_TOOLS: "33.0.2"          # 与 ANDROID_API 对应版本
 
     steps:
       - name: Checkout
@@ -69,6 +69,33 @@ jobs:
       - name: Show Gradle info
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew -v
+
+      # ---------- 准备签名（仅发布场景）----------
+      - name: Prepare release keystore from secrets
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
+        shell: bash
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_SIGNING_KEYSTORE_BASE64:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEYSTORE_PASSWORD:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEY_ALIAS:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEY_PASSWORD:-}" ]; then
+            echo "Signing secrets are missing; release artifacts will be UNSIGNED."
+            exit 0
+          fi
+
+          KEYSTORE_PATH="$RUNNER_TEMP/release.keystore"
+          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          # Export env vars for Gradle
+          echo "SIGNING_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "SIGNING_KEYSTORE_PASSWORD=$ANDROID_SIGNING_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_ALIAS=$ANDROID_SIGNING_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_PASSWORD=$ANDROID_SIGNING_KEY_PASSWORD" >> "$GITHUB_ENV"
 
       # ---------- Debug（非发布场景）----------
       - name: Build Debug APK
