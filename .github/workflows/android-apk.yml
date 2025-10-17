@@ -25,8 +25,8 @@ jobs:
     env:
       ANDROID_DIR: project           # Android 工程目录（含 gradlew）
       APP_MODULE: app                # 主模块名
-      ANDROID_API: "34"              # 如 compileSdkVersion 不是 34，请改
-      BUILD_TOOLS: "34.0.0"          # 同步到匹配版本（如 33.0.2）
+      ANDROID_API: "33"              # 与 app 的 compileSdkVersion 对齐
+      BUILD_TOOLS: "33.0.2"          # 与 ANDROID_API 对应版本
 
     steps:
       - name: Checkout
@@ -70,6 +70,33 @@ jobs:
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew -v
 
+      # ---------- 准备签名（仅发布场景）----------
+      - name: Prepare release keystore from secrets
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
+        shell: bash
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_SIGNING_KEYSTORE_BASE64:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEYSTORE_PASSWORD:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEY_ALIAS:-}" ] || \
+             [ -z "${ANDROID_SIGNING_KEY_PASSWORD:-}" ]; then
+            echo "Signing secrets are missing; release artifacts will be UNSIGNED."
+            exit 0
+          fi
+
+          KEYSTORE_PATH="$RUNNER_TEMP/release.keystore"
+          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          # Export env vars for Gradle
+          echo "SIGNING_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "SIGNING_KEYSTORE_PASSWORD=$ANDROID_SIGNING_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_ALIAS=$ANDROID_SIGNING_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_PASSWORD=$ANDROID_SIGNING_KEY_PASSWORD" >> "$GITHUB_ENV"
+
       # ---------- Debug（非发布场景）----------
       - name: Build Debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || github.event.inputs.release_version == '') }}
@@ -89,6 +116,69 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: ./gradlew --no-daemon :${{ env.APP_MODULE }}:assembleRelease :${{ env.APP_MODULE }}:bundleRelease
+
+      # 若未配置正式签名（Secrets 不存在），使用临时 keystore 对 Release APK 进行签名以便安装
+      - name: Temporary sign Release APKs when no secrets
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.release_version != '') }}
+        shell: bash
+        env:
+          BUILD_TOOLS: ${{ env.BUILD_TOOLS }}
+          ANDROID_DIR: ${{ env.ANDROID_DIR }}
+          APP_MODULE: ${{ env.APP_MODULE }}
+        run: |
+          set -euo pipefail
+          # 如果已经配置了正式签名环境变量，则跳过临时签名
+          if [[ -n "${SIGNING_KEYSTORE_PATH:-}" && -n "${SIGNING_KEYSTORE_PASSWORD:-}" && -n "${SIGNING_KEY_ALIAS:-}" && -n "${SIGNING_KEY_PASSWORD:-}" ]]; then
+            echo "Signing secrets detected; skip temporary signing."
+            exit 0
+          fi
+
+          echo "No signing secrets; performing temporary signing for installable APKs."
+          # 解析 apksigner 路径
+          APKSIGNER=$(command -v apksigner || true)
+          if [[ -z "$APKSIGNER" ]]; then
+            if [[ -n "${ANDROID_SDK_ROOT:-}" && -x "$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner" ]]; then
+              APKSIGNER="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner"
+            elif [[ -x "/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner" ]]; then
+              APKSIGNER="/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner"
+            else
+              echo "apksigner not found" >&2
+              exit 1
+            fi
+          fi
+
+          # 生成临时 keystore（PKCS12，store/key 使用相同密码，避免 apksigner 密码不一致问题）
+          KS="$RUNNER_TEMP/temp-release.keystore"
+          ALIAS="temp"
+          if command -v openssl >/dev/null 2>&1; then
+            PASS=$(openssl rand -hex 16)
+          else
+            PASS=$(head -c 16 /dev/urandom | xxd -p || echo tempPass123)
+          fi
+          keytool -genkeypair -v \
+            -storetype PKCS12 \
+            -keystore "$KS" -storepass "$PASS" -keypass "$PASS" \
+            -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Temporary,O=CI,OU=CI,L=,S=,C=US"
+
+          APK_DIR="$ANDROID_DIR/$APP_MODULE/build/outputs/apk/release"
+          shopt -s nullglob
+          APKS=("$APK_DIR"/*.apk)
+          if [[ ${#APKS[@]} -eq 0 ]]; then
+            echo "No release APKs found to sign in $APK_DIR" >&2
+            exit 1
+          fi
+          for APK in "${APKS[@]}"; do
+            echo "Signing $APK with temporary keystore..."
+            "$APKSIGNER" sign \
+              --ks "$KS" \
+              --ks-key-alias "$ALIAS" \
+              --ks-pass pass:"$PASS" \
+              --key-pass pass:"$PASS" \
+              "$APK"
+            echo "Verifying signature for $APK"
+            "$APKSIGNER" verify -v "$APK"
+          done
 
       # 打 tag 发布：使用当前 tag
       - name: Create/Update GitHub Release (tag push)

@@ -24,12 +24,34 @@ android {
         viewBinding true
     }
 
+    // Signing via environment variables (used by CI)
+    def SIGNING_KEYSTORE_PATH = System.getenv("SIGNING_KEYSTORE_PATH")
+    def SIGNING_KEYSTORE_PASSWORD = System.getenv("SIGNING_KEYSTORE_PASSWORD")
+    def SIGNING_KEY_ALIAS = System.getenv("SIGNING_KEY_ALIAS")
+    def SIGNING_KEY_PASSWORD = System.getenv("SIGNING_KEY_PASSWORD")
+
+    signingConfigs {
+        release {
+            if (SIGNING_KEYSTORE_PATH && SIGNING_KEYSTORE_PASSWORD && SIGNING_KEY_ALIAS && SIGNING_KEY_PASSWORD) {
+                storeFile file(SIGNING_KEYSTORE_PATH)
+                storePassword SIGNING_KEYSTORE_PASSWORD
+                keyAlias SIGNING_KEY_ALIAS
+                keyPassword SIGNING_KEY_PASSWORD
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             resValue "string", "app_name", "@string/app_name_release"
+            if (SIGNING_KEYSTORE_PATH && SIGNING_KEYSTORE_PASSWORD && SIGNING_KEY_ALIAS && SIGNING_KEY_PASSWORD) {
+                signingConfig signingConfigs.release
+            } else {
+                println("[Gradle] Release signing not configured; producing UNSIGNED release artifacts.")
+            }
         }
         debug {
             applicationIdSuffix ".debug"
