@@ -359,6 +359,7 @@ class MusicContainersFragment : Fragment(),
 
                     title.text = item
                     subtitle.text = getItemsSubtitle(item)
+                    stats?.handleViewVisibility(show = false)
 
                     selector.handleViewVisibility(show = itemsToHide.contains(item))
 

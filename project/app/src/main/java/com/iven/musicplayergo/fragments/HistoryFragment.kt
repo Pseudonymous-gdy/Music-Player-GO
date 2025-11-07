@@ -30,6 +30,7 @@ import com.iven.musicplayergo.extensions.handleViewVisibility
 import com.iven.musicplayergo.extensions.loadWithError
 import com.iven.musicplayergo.extensions.toName
 import com.iven.musicplayergo.extensions.waitForCover
+import com.iven.musicplayergo.extensions.toFormattedDuration
 import com.iven.musicplayergo.models.HistoryEntry
 import com.iven.musicplayergo.player.MediaPlayerHolder
 import com.iven.musicplayergo.ui.MediaControlInterface
@@ -90,17 +91,17 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
         toolbar.title = getString(R.string.play_history)
         toolbar.overflowIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_sort)
         toolbar.setNavigationOnClickListener { mUIControlInterface.onCloseActivity() }
+        toolbar.menu.setGroupCheckable(R.id.history_curated, true, true)
         toolbar.menu.setGroupCheckable(R.id.sorting, true, true)
         toolbar.menu.findItem(R.id.default_sorting)?.isChecked = true
-        toolbar.menu.findItem(R.id.action_clear_history)?.isVisible = historyEntries.isNotEmpty()
+        toolbar.menu.findItem(R.id.action_clear_history)?.isVisible = true
 
         (toolbar.menu.findItem(R.id.action_search)?.actionView as? SearchView)?.apply {
             setOnQueryTextListener(this@HistoryFragment)
             setOnQueryTextFocusChangeListener { _, hasFocus ->
                 toolbar.menu.setGroupVisible(R.id.sorting, !hasFocus)
                 toolbar.menu.findItem(R.id.sleeptimer).isVisible = !hasFocus
-                toolbar.menu.findItem(R.id.action_clear_history).isVisible =
-                    !hasFocus && historyEntries.isNotEmpty()
+                toolbar.menu.findItem(R.id.action_clear_history).isVisible = !hasFocus
             }
         }
 
@@ -136,8 +137,6 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PlaybackHistory.historyFlow().collectLatest { entries ->
                     historyEntries = entries
-                    binding?.searchToolbar?.menu?.findItem(R.id.action_clear_history)?.isVisible =
-                        entries.isNotEmpty() && historyQuery.isBlank()
                     applyHistoryFilters()
                 }
             }
@@ -148,6 +147,11 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
         return when (item.itemId) {
             R.id.sleeptimer -> {
                 mUIControlInterface.onOpenSleepTimerDialog()
+                true
+            }
+            R.id.action_top_frequent -> {
+                playHistoryEntries(PlaybackHistory.topFrequent())
+                item.isChecked = false
                 true
             }
             R.id.action_clear_history -> {
@@ -225,6 +229,16 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
         }
     }
 
+    private fun playHistoryEntries(entries: List<HistoryEntry>) {
+        if (entries.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.history_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val songs = entries.map { it.music }
+        val firstSong = songs.first()
+        mMediaControlInterface.onSongSelected(firstSong, songs, GoConstants.ARTIST_VIEW)
+    }
+
     /** 提供给 MainActivity 更新睡眠图标用（MainActivity.updateSleepTimerIcon 会调用） */
     fun tintSleepTimerIcon(enabled: Boolean) {
         binding?.searchToolbar?.let { Theming.tintSleepTimerMenuItem(it, enabled) }
@@ -233,8 +247,6 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
     override fun onQueryTextChange(newText: String?): Boolean {
         historyQuery = newText?.trim().orEmpty()
         applyHistoryFilters()
-        binding?.searchToolbar?.menu?.findItem(R.id.action_clear_history)?.isVisible =
-            historyEntries.isNotEmpty() && historyQuery.isBlank()
         return true
     }
 
@@ -275,11 +287,18 @@ class HistoryFragment : Fragment(), SearchView.OnQueryTextListener {
                         music.artist,
                         music.album
                     )
-                    historyPlayedAt.text = DateUtils.getRelativeTimeSpanString(
+                    val relativeTime = DateUtils.getRelativeTimeSpanString(
                         entry.playedAt,
                         System.currentTimeMillis(),
                         DateUtils.MINUTE_IN_MILLIS,
                         DateUtils.FORMAT_ABBREV_RELATIVE
+                    )
+                    val listenedDuration = entry.totalDuration.toFormattedDuration(isAlbum = false, isSeekBar = false)
+                    historyPlayedAt.text = getString(
+                        R.string.history_stats_history_row,
+                        relativeTime,
+                        entry.playCount,
+                        listenedDuration
                     )
 
                     val showCovers = GoPreferences.getPrefsInstance().isCovers

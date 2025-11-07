@@ -5,6 +5,7 @@ interface MediaPlayerInterface {
     fun onStateChanged()
     fun onClose()
     fun onUpdateRepeatStatus()
+    fun onShuffleChanged(enabled: Boolean)
     fun onQueueEnabled()
     fun onQueueStartedOrEnded(started: Boolean)
     fun onBackupSong()

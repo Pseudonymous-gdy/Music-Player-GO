@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -15,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.text.parseAsHtml
 import androidx.core.view.doOnLayout
+import androidx.core.view.isVisible
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -37,6 +39,7 @@ import com.iven.musicplayergo.ui.ItemSwipeCallback
 import com.iven.musicplayergo.ui.MediaControlInterface
 import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
+import com.iven.musicplayergo.utils.PlaybackHistory
 import com.iven.musicplayergo.utils.Popups
 import com.iven.musicplayergo.utils.Theming
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
@@ -401,6 +404,7 @@ class DetailsFragment : Fragment(), SearchView.OnQueryTextListener {
             mSongsList = newSongsList
             if (updateAdapter) _detailsFragmentBinding?.songsRv?.adapter?.notifyDataSetChanged()
             if (updateSongs) mMediaControlInterface.onUpdatePlayingAlbumSongs(mSongsList)
+            updatePlaybackStats()
         }
     }
 
@@ -594,6 +598,38 @@ class DetailsFragment : Fragment(), SearchView.OnQueryTextListener {
                 mSelectedAlbum?.year
             )
         }
+        updatePlaybackStats()
+    }
+
+    private fun updatePlaybackStats() {
+        _detailsFragmentBinding?.detailsStats?.let { statsView ->
+            val stats = when {
+                sLaunchedByArtistView -> PlaybackHistory.statsForArtist(mSelectedArtistOrFolder)
+                else -> {
+                    val ids = mSongsList?.mapNotNull { it.id } ?: emptyList()
+                    PlaybackHistory.statsForSongs(ids)
+                }
+            }
+            if (stats == null || (stats.playCount == 0 && stats.totalDuration == 0L)) {
+                statsView.isVisible = false
+            } else {
+                val listenDuration = stats.totalDuration.toFormattedDuration(isAlbum = false, isSeekBar = false)
+                val lastPlayedText = stats.lastPlayed?.let {
+                    DateUtils.getRelativeTimeSpanString(
+                        it,
+                        System.currentTimeMillis(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                        DateUtils.FORMAT_ABBREV_RELATIVE
+                    )
+                }
+                statsView.isVisible = true
+                statsView.text = if (lastPlayedText != null) {
+                    getString(R.string.history_stats_overview_with_last, stats.playCount, listenDuration, lastPlayedText)
+                } else {
+                    getString(R.string.history_stats_overview, stats.playCount, listenDuration)
+                }
+            }
+        }
     }
 
     private fun swapAlbum(songs: MutableList<Music>?) {
@@ -736,6 +772,23 @@ class DetailsFragment : Fragment(), SearchView.OnQueryTextListener {
                             itemSong?.artist, itemSong?.dateAdded?.toFormattedDate())
                     } else {
                         duration
+                    }
+
+                    val historyEntry = itemSong?.id?.let { PlaybackHistory.entryForSong(it) }
+                    stats?.let { statsView ->
+                        if (historyEntry != null && (historyEntry.playCount > 0 || historyEntry.totalDuration > 0L)) {
+                            statsView.isVisible = true
+                            val durationText = historyEntry.totalDuration.toFormattedDuration(isAlbum = false, isSeekBar = false)
+                            val lastPlayedText = DateUtils.getRelativeTimeSpanString(
+                                historyEntry.playedAt,
+                                System.currentTimeMillis(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                                DateUtils.FORMAT_ABBREV_RELATIVE
+                            )
+                            statsView.text = getString(R.string.history_stats_song_row, historyEntry.playCount, durationText, lastPlayedText)
+                        } else {
+                            statsView.isVisible = false
+                        }
                     }
 
                     root.setOnClickListener {

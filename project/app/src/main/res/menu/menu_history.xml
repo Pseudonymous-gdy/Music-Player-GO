@@ -18,9 +18,19 @@
         app:showAsAction="always"
         tools:ignore="AlwaysShowAction" />
 
+    <group
+        android:id="@+id/history_curated"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/action_top_frequent"
+            android:title="@string/history_playlist_frequent"
+            android:checkable="true"
+            app:showAsAction="ifRoom" />
+    </group>
+
     <item
         android:id="@+id/action_clear_history"
-        android:icon="@drawable/ic_delete"
         android:title="@string/history_clear"
         app:showAsAction="never" />
 

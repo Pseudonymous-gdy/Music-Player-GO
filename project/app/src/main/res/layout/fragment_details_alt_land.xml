@@ -158,7 +158,7 @@
                 android:layout_gravity="end"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
-                android:paddingBottom="8dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
                 android:textColor="?android:attr/textColorSecondary" />
@@ -186,4 +186,15 @@
             android:padding="8dp"
             app:srcCompat="@drawable/ic_queue_add" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/details_stats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
 </LinearLayout>

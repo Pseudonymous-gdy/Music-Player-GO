@@ -53,6 +53,7 @@
     <string name="headset_pref_title">耳机接入管理</string>
     <string name="filter_pref_title">过滤器</string>
     <string name="notification_actions_repeat">其它通知操作按钮设置</string>
+    <string name="notification_actions_shuffle">随机播放/关闭</string>
     <string name="fast_seeking_pref_title">快进/快退</string>
     <string name="song_visual_pref_tl_title">标题</string>
     <string name="song_visual_pref_title">音乐可视化</string>
@@ -71,6 +72,7 @@
     <string name="anim_pref_title">动画效果</string>
     <string name="open_details_fragment">打开歌手/文件夹的详情</string>
     <string name="content_repeat">重复播放的启用/禁用</string>
+    <string name="content_shuffle">随机播放的启用/禁用</string>
     <string name="content_play">播放/暂停</string>
     <string name="speed_3">正常</string>
     <string name="content_playback_speed">播放速度</string>
@@ -87,6 +89,9 @@
     <string name="sorting_pref_date_added">新添加的在后</string>
     <string name="pause_on_end_disabled">禁用播放完成后暂停。</string>
     <string name="pause_on_end">播放完成后暂停。</string>
+    <string name="shuffle_enabled">随机播放已开启。</string>
+    <string name="shuffle_disabled">随机播放已关闭。</string>
+    <string name="shuffle_queue_not_supported">启用播放列表时无法开启随机播放。</string>
     <string name="equalizer_presets">预设</string>
     <string name="locale_basque">巴斯克语</string>
     <string name="locale_bengali">孟加拉语</string>
@@ -186,6 +191,12 @@
     <string name="history_sort_title_asc">标题 A-Z</string>
     <string name="history_sort_title_desc">标题 Z-A</string>
     <string name="history_clear">清除播放历史</string>
+    <string name="history_playlist_recent">播放最近常听歌单</string>
+    <string name="history_playlist_frequent">常听歌单</string>
+    <string name="history_stats_overview">播放 %1$d 次 · 听了 %2$s</string>
+    <string name="history_stats_overview_with_last">播放 %1$d 次 · 听了 %2$s · 最近一次 %3$s</string>
+    <string name="history_stats_song_row">%1$d 次 · %2$s · %3$s</string>
+    <string name="history_stats_history_row">最近播放 %1$s · 播放 %2$d 次 · 听了 %3$s</string>
     <string name="history_empty">尚无播放历史。</string>
     <string name="history_cleared">播放历史已清除。</string>
     <string name="history_no_results">没有匹配的搜索结果。</string>

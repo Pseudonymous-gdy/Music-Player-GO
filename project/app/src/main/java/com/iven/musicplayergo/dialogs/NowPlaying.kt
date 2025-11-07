@@ -159,6 +159,12 @@ class NowPlaying: BottomSheetDialogFragment() {
                     updateNpFavoritesIcon()
                 }
 
+                npShuffle?.let { shuffleBtn ->
+                    shuffleBtn.setImageResource(R.drawable.ic_shuffle)
+                    updateShuffleStatus(mph.isShuffleEnabled)
+                    shuffleBtn.setOnClickListener { mph.toggleShuffle() }
+                }
+
                 with(npRepeat) {
                     setImageResource(
                         Theming.getRepeatIcon(isNotification = false)
@@ -171,8 +177,9 @@ class NowPlaying: BottomSheetDialogFragment() {
                         }
                     )
                     setOnClickListener { setRepeat() }
-                    setupNPCoverButtonsToasts(npSaveTime, npLove, npEqualizer, this)
                 }
+
+                setupNPCoverButtonsToasts(npSaveTime, npLove, npEqualizer, npShuffle, npRepeat)
 
                 with (npPauseOnEnd) {
                     isChecked = mGoPreferences.continueOnEnd
@@ -193,11 +200,10 @@ class NowPlaying: BottomSheetDialogFragment() {
         }
     }
 
-    private fun setupNPCoverButtonsToasts(vararg imageButtons: ImageButton) {
-        val iterator = imageButtons.iterator()
-        while (iterator.hasNext()) {
-            iterator.next().setOnLongClickListener { btn ->
-                Toast.makeText(requireContext(), btn.contentDescription, Toast.LENGTH_SHORT)
+    private fun setupNPCoverButtonsToasts(vararg imageButtons: ImageButton?) {
+        imageButtons.filterNotNull().forEach { btn ->
+            btn.setOnLongClickListener { view ->
+                Toast.makeText(requireContext(), view.contentDescription, Toast.LENGTH_SHORT)
                     .show()
                 return@setOnLongClickListener true
             }
@@ -311,6 +317,17 @@ class NowPlaying: BottomSheetDialogFragment() {
         }
     }
 
+    fun updateShuffleStatus(enabled: Boolean) {
+        if (::mMediaControlInterface.isInitialized) {
+            val tint = if (enabled) {
+                Theming.resolveThemeColor(resources)
+            } else {
+                Theming.resolveWidgetsColorNormal(requireContext())
+            }
+            _npCoverBinding?.npShuffle?.updateIconTint(tint)
+        }
+    }
+
     private fun loadNpCover(selectedSong: Music) {
         mAlbumIdNp = selectedSong.albumId
         mAlbumIdNp?.waitForCover(requireContext()) { bmp, error ->
@@ -394,6 +411,7 @@ class NowPlaying: BottomSheetDialogFragment() {
                             getString(R.string.rates, first, second)
                     }
                     updateNpFavoritesIcon()
+                    updateShuffleStatus(mMediaPlayerHolder.isShuffleEnabled)
                     updatePlayingStatus()
                 }
             }

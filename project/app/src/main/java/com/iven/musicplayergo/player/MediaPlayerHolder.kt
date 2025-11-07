@@ -45,6 +45,7 @@ import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.PlaybackHistory
 import com.iven.musicplayergo.utils.Versioning
+import java.util.ArrayDeque
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -90,7 +91,7 @@ class MediaPlayerHolder:
     private lateinit var mPlayerService: PlayerService
 
     private var mMediaMetadataCompat: MediaMetadataCompat? = null
-    private val mMediaSessionActions = ACTION_PLAY or ACTION_PAUSE or ACTION_PLAY_PAUSE or ACTION_SKIP_TO_NEXT or ACTION_SKIP_TO_PREVIOUS or ACTION_STOP or ACTION_SEEK_TO
+    private val mMediaSessionActions = ACTION_PLAY or ACTION_PAUSE or ACTION_PLAY_PAUSE or ACTION_SKIP_TO_NEXT or ACTION_SKIP_TO_PREVIOUS or ACTION_STOP or ACTION_SEEK_TO or ACTION_SET_SHUFFLE_MODE
     lateinit var mediaPlayerInterface: MediaPlayerInterface
 
     // Equalizer
@@ -177,6 +178,10 @@ class MediaPlayerHolder:
     var isLooping = false
     private val continueOnEnd get() = GoPreferences.getPrefsInstance().continueOnEnd
 
+    var isShuffleEnabled = GoPreferences.getPrefsInstance().isShuffleEnabled
+    private val shuffleHistory = ArrayDeque<Music>()
+    private var shufflePool = ArrayDeque<Music>()
+
     // isQueue saves the current song when queue starts
     var isQueue: Music? = null
     var isQueueStarted = false
@@ -190,6 +195,9 @@ class MediaPlayerHolder:
     var state = GoConstants.PAUSED
     var isPlay = false
 
+    private var playbackStartTimestamp: Long? = null
+    private var hasLoggedCurrentSong = false
+
     // Notifications
     private lateinit var mPlayerBroadcastReceiver: PlayerBroadcastReceiver
     private var mMusicNotificationManager: MusicNotificationManager? = null
@@ -201,6 +209,7 @@ class MediaPlayerHolder:
         if (mMusicNotificationManager == null) mMusicNotificationManager = mPlayerService.musicNotificationManager
         registerActionsReceiver()
         mPlayerService.configureMediaSession()
+        updateMediaSessionShuffleMode()
         openOrCloseAudioEffectAction(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
     }
 
@@ -325,6 +334,8 @@ class MediaPlayerHolder:
 
     override fun onCompletion(mediaPlayer: MediaPlayer) {
 
+        finalizePlaybackSession()
+
         if (isCurrentSongFM) currentSongFM = null
 
         when {
@@ -443,6 +454,7 @@ class MediaPlayerHolder:
                 GoPreferences.getPrefsInstance().hasCompletedPlayback = false
                 skip(isNext = true)
             } else {
+                registerPlaybackStart()
                 startOrChangePlaybackSpeed()
             }
 
@@ -473,6 +485,7 @@ class MediaPlayerHolder:
         if (::mediaPlayerInterface.isInitialized && !isCurrentSongFM) {
             mediaPlayerInterface.onBackupSong()
         }
+        finalizePlaybackSession()
     }
 
     fun repeatSong(startFrom: Int) {
@@ -485,6 +498,8 @@ class MediaPlayerHolder:
     }
 
     private fun manageQueue(isNext: Boolean) {
+
+        finalizePlaybackSession()
 
         if (isSongFromPrefs) isSongFromPrefs = false
 
@@ -500,6 +515,7 @@ class MediaPlayerHolder:
     }
 
     private fun manageRestoredQueue() {
+        finalizePlaybackSession()
         currentSong = restoreQueueSong
         initMediaPlayer(currentSong, forceReset = false)
 
@@ -591,6 +607,9 @@ class MediaPlayerHolder:
      */
     fun initMediaPlayer(song: Music?, forceReset: Boolean) {
 
+        playbackStartTimestamp = null
+        hasLoggedCurrentSong = false
+
         try {
 
             if (isMediaPlayer && !forceReset) {
@@ -675,9 +694,6 @@ class MediaPlayerHolder:
             if (sFocusEnabled && !sHasFocus) {
                 tryToGetAudioFocus()
             }
-            if (currentSongFM == null) {
-                currentSong?.let { PlaybackHistory.log(it, launchedBy) }
-            }
             play()
         }
 
@@ -689,9 +705,35 @@ class MediaPlayerHolder:
     }
 
     private fun play() {
+        registerPlaybackStart()
         startOrChangePlaybackSpeed()
         state = GoConstants.PLAYING
         updatePlaybackStatus(updateUI = true)
+    }
+
+    private fun registerPlaybackStart() {
+        if (currentSongFM != null) {
+            playbackStartTimestamp = null
+            return
+        }
+        if (!hasLoggedCurrentSong) {
+            currentSong?.let { PlaybackHistory.logPlayStart(it, launchedBy) }
+            hasLoggedCurrentSong = true
+        }
+        playbackStartTimestamp = System.currentTimeMillis()
+    }
+
+    private fun finalizePlaybackSession() {
+        val start = playbackStartTimestamp ?: return
+        playbackStartTimestamp = null
+        if (currentSongFM != null) return
+        val listened = System.currentTimeMillis() - start
+        if (listened <= 0) return
+        currentSong?.let { PlaybackHistory.addListeningTime(it, listened) }
+    }
+
+    fun finalizeHistoryPlayback() {
+        finalizePlaybackSession()
     }
 
     private fun restoreCustomEqSettings() {
@@ -794,6 +836,7 @@ class MediaPlayerHolder:
     }
 
     fun release() {
+        finalizePlaybackSession()
         if (isMediaPlayer) {
             openOrCloseAudioEffectAction(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)
             releaseBuiltInEqualizer()
@@ -881,6 +924,68 @@ class MediaPlayerHolder:
         mediaPlayerInterface.onUpdateFavorites()
     }
 
+    fun toggleShuffle(): Boolean {
+        isShuffleEnabled = !isShuffleEnabled
+        GoPreferences.getPrefsInstance().isShuffleEnabled = isShuffleEnabled
+        if (isShuffleEnabled) {
+            rebuildShufflePool(resetHistory = true)
+        } else {
+            clearShuffleData()
+        }
+        updateMediaSessionShuffleMode()
+        mMusicNotificationManager?.updateShuffleIcon()
+        if (::mediaPlayerInterface.isInitialized) {
+            mediaPlayerInterface.onShuffleChanged(isShuffleEnabled)
+        }
+        return isShuffleEnabled
+    }
+
+    private fun rebuildShufflePool(resetHistory: Boolean) {
+        if (!isShuffleEnabled) return
+        val source = (mPlayingSongs ?: emptyList()).filterNot { it.isSameSong(currentSong) }
+        shufflePool = ArrayDeque(source.shuffled())
+        if (resetHistory) shuffleHistory.clear()
+    }
+
+    private fun clearShuffleData() {
+        shufflePool.clear()
+        shuffleHistory.clear()
+    }
+
+    private fun updateMediaSessionShuffleMode() {
+        if (::mPlayerService.isInitialized) {
+            mPlayerService.getMediaSession()?.setShuffleMode(
+                if (isShuffleEnabled) PlaybackStateCompat.SHUFFLE_MODE_ALL else PlaybackStateCompat.SHUFFLE_MODE_NONE
+            )
+        }
+    }
+
+
+    private fun Music.isSameSong(other: Music?) = id == other?.id && albumId == other?.albumId
+
+    private fun getShuffledSong(isNext: Boolean): Music? {
+        val songs = mPlayingSongs
+        if (songs.isNullOrEmpty() || songs.size == 1) return currentSong
+        return if (isNext) {
+            if (shufflePool.isEmpty()) {
+                rebuildShufflePool(resetHistory = false)
+                if (shufflePool.isEmpty()) return currentSong
+            }
+            currentSong?.let { shuffleHistory.addLast(it) }
+            if (shuffleHistory.size > songs.size) {
+                shuffleHistory.removeFirst()
+            }
+            if (shufflePool.isEmpty()) currentSong else shufflePool.removeFirst()
+        } else {
+            val previous = if (shuffleHistory.isEmpty()) null else shuffleHistory.removeLast()
+            previous?.also { prev ->
+                currentSong?.takeUnless { it.isSameSong(prev) }?.let { current ->
+                    shufflePool.addFirst(current)
+                }
+            } ?: currentSong
+        }
+    }
+
     fun setQueueEnabled(enabled: Boolean, canSkip: Boolean) {
 
         if (enabled && ::mediaPlayerInterface.isInitialized) {
@@ -904,10 +1009,15 @@ class MediaPlayerHolder:
     }
 
     fun skip(isNext: Boolean) {
+        finalizePlaybackSession()
         if (isCurrentSongFM) currentSongFM = null
         when {
             isQueue != null && !canRestoreQueue -> manageQueue(isNext = isNext)
             canRestoreQueue -> manageRestoredQueue()
+            isShuffleEnabled -> {
+                currentSong = getShuffledSong(isNext = isNext)
+                initMediaPlayer(currentSong, forceReset = false)
+            }
             else -> {
                 currentSong = getSkipSong(isNext = isNext)
                 initMediaPlayer(currentSong, forceReset = false)
@@ -1003,6 +1113,7 @@ class MediaPlayerHolder:
     }
 
     fun stopPlaybackService(stopPlayback: Boolean, fromUser: Boolean, fromFocus: Boolean) {
+        finalizePlaybackSession()
         try {
             if (mPlayerService.isRunning && isMediaPlayer && stopPlayback) {
                 if (sNotificationOngoing) {

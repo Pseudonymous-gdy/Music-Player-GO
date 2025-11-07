@@ -28,6 +28,7 @@ import java.util.regex.Pattern
 
 
 fun MediaPlayerHolder.startSongFromQueue(selectedSong: Music?) {
+    finalizeHistoryPlayback()
     selectedSong?.let { song ->
         queueSongs.findIndex(song).takeIf { it != RecyclerView.NO_POSITION }?.let { position ->
             queueSongs[position] = song

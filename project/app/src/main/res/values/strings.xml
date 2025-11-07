@@ -28,6 +28,12 @@
     <string name="history_sort_title_asc">Title A-Z</string>
     <string name="history_sort_title_desc">Title Z-A</string>
     <string name="history_clear">Clear history</string>
+    <string name="history_playlist_recent">Play recent mix</string>
+    <string name="history_playlist_frequent">Frequently played</string>
+    <string name="history_stats_overview">%1$d plays · %2$s listened</string>
+    <string name="history_stats_overview_with_last">%1$d plays · %2$s listened · %3$s</string>
+    <string name="history_stats_song_row">%1$d plays · %2$s · %3$s</string>
+    <string name="history_stats_history_row">Last played %1$s · %2$d plays · %3$s listened</string>
     <string name="history_empty">No play history yet.</string>
     <string name="history_cleared">History cleared.</string>
     <string name="history_no_results">No matches for your search.</string>
@@ -78,6 +84,7 @@
     <string name="content_play">Play/pause</string>
     <string name="content_skip_next">Skip to next</string>
     <string name="content_repeat">Turn on/off selected repetition</string>
+    <string name="content_shuffle">Turn on/off shuffle playback</string>
     <!-- Messages - Errors -->
     <string name="open_git_pref_summary">Open the project webpage for more info :)</string>
     <string name="open_details_fragment">Open artist/folder\'s details</string>
@@ -99,6 +106,9 @@
     <string name="repeat_enabled">Single repetition on.</string>
     <string name="repeat_loop_enabled">∞ repeat on.</string>
     <string name="repeat_disabled">∞ repeat off.</string>
+    <string name="shuffle_enabled">Shuffle on.</string>
+    <string name="shuffle_disabled">Shuffle off.</string>
+    <string name="shuffle_queue_not_supported">Cannot enable shuffle while the queue is active.</string>
     <string name="continue_on_end_desc">Choose whether to continue playback or pause on completion</string>
     <string name="pause_on_end">Pause on completion on.</string>
     <string name="pause_on_end_disabled">Pause on completion off.</string>
@@ -192,6 +202,7 @@
     <!-- Preferences - Additional notification actions -->
     <string name="notification_actions_pref_title">Additional notification actions</string>
     <string name="notification_actions_repeat">Repeat/close</string>
+    <string name="notification_actions_shuffle">Shuffle/close</string>
     <string name="notification_actions_favorite">Add to favorites/close</string>
     <string name="notification_actions_favorite_position">Add to favorites (with position)/close</string>
     <string name="notification_actions_fast_seeking">Fast seeking</string>
