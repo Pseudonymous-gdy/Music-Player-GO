@@ -45,7 +45,13 @@
         tools:listitem="@layout/album_item"
         tools:itemCount="8"
         tools:spanCount="2"/>
-
+    <Button
+        android:id="@+id/recommend_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="请求推荐"
+        android:layout_margin="16dp"
+        android:contentDescription="触发推荐请求（测试代码）" />
     <TextView
         android:id="@+id/empty_history"
         android:layout_width="wrap_content"

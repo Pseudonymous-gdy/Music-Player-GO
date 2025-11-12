@@ -15,6 +15,13 @@ import com.iven.musicplayergo.ui.MediaControlInterface
 import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Theming
 
+// 下面为接口测试所需库
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.iven.musicplayergo.network.RecommendService
 /**
  * History 页面：遵循与 AllMusic 相同的 UI 结构（toolbar + RecyclerView + FAB），
  * 先把界面与菜单/睡眠定时器接线好，数据源后续再接入。
@@ -46,12 +53,29 @@ class HistoryFragment : Fragment() {
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return _binding?.root
     }
-
+    //此处为测试
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupToolbar(view)
         setupList()
         setupFab()
+
+        // 新增：找到按钮并绑定点击事件
+        binding?.recommendBtn?.setOnClickListener {
+            // 简单示例：点击后请求服务器并用 Toast 显示收到条数
+            lifecycleScope.launch {
+                try {
+                    val resp = withContext(Dispatchers.IO) {
+                        RecommendService.api.getRecommend("user123")
+                    }
+                    val songs = resp.songs
+                    Toast.makeText(requireContext(), "收到 ${songs.size} 条推荐", Toast.LENGTH_SHORT).show()
+                    // TODO: 把 songs 传给 RecyclerView adapter 来显示
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "请求失败: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun setupToolbar(root: View) {

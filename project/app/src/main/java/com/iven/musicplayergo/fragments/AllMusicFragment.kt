@@ -31,6 +31,17 @@ import com.iven.musicplayergo.utils.Theming
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import me.zhanghai.android.fastscroll.PopupTextProvider
 
+// ...existing imports...
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import com.iven.musicplayergo.utils.createZipFromFiles
+import com.iven.musicplayergo.network.ArchiveService
 
 /**
  * A simple [Fragment] subclass.
@@ -210,6 +221,65 @@ class AllMusicFragment : Fragment(), SearchView.OnQueryTextListener {
 
     override fun onQueryTextSubmit(query: String?) = false
 
+
+    // try upload music here. new logic 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // ...existing setup code (RecyclerView 等) ...
+
+        // 找到布局里的 "选择并上传" 按钮（确保 id 为 uploadSelectBtn）
+        val uploadBtn = view.findViewById<View>(R.id.uploadSelectBtn)
+        uploadBtn?.setOnClickListener {
+            // 从 Activity 的 MusicViewModel 获取当前检测到的歌曲列表
+            val deviceList = (activity as? MainActivity)?.musicViewModel?.deviceMusic?.value ?: mutableListOf()
+            if (deviceList.isEmpty()) {
+                Toast.makeText(requireContext(), "没有检测到音乐", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 准备显示的项（显示名）和对应路径数组
+            val titles = deviceList.map { it?.displayName ?: it?.title ?: it?.path?.let { p -> java.io.File(p).name } ?: "未知" }.toTypedArray()
+            val paths = deviceList.mapNotNull { it?.path }
+            val checked = BooleanArray(titles.size)
+
+            // 多选对话框
+            AlertDialog.Builder(requireContext())
+                .setTitle("选择要上传的歌曲")
+                .setMultiChoiceItems(titles, checked) { _, which, isChecked ->
+                    checked[which] = isChecked
+                }
+                .setPositiveButton("上传") { _, _ ->
+                    // 收集被选中的路径
+                    val selected = paths.filterIndexed { idx, _ -> idx < checked.size && checked[idx] }
+                    if (selected.isEmpty()) {
+                        Toast.makeText(requireContext(), "未选择任何歌曲", Toast.LENGTH_SHORT).show()
+                        return@setPositiveButton
+                    }
+                    // 上传流程：在协程中压缩并上传
+                    lifecycleScope.launch {
+                        try {
+                            val zipFile = withContext(Dispatchers.IO) {
+                                createZipFromFiles(requireContext(), selected, "selected_music.zip")
+                            }
+                            val reqFile = zipFile.asRequestBody("application/zip".toMediaTypeOrNull())
+                            val part = MultipartBody.Part.createFormData("file", zipFile.name, reqFile)
+                            val userIdBody = "user123".toRequestBody("text/plain".toMediaTypeOrNull())
+
+                            val resp = withContext(Dispatchers.IO) {
+                                ArchiveService.api.uploadArchive(part, userIdBody)
+                            }
+
+                            Toast.makeText(requireContext(), "上传结果: ${resp.ok} ${resp.message}", Toast.LENGTH_LONG).show()
+                            zipFile.delete()
+                        } catch (e: Exception) {
+                            Toast.makeText(requireContext(), "上传失败: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+    }
     private inner class AllMusicAdapter : RecyclerView.Adapter<AllMusicAdapter.SongsHolder>(), PopupTextProvider {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongsHolder {
