@@ -6,6 +6,8 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.request.CachePolicy
 import com.iven.musicplayergo.utils.Theming
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 
 
 class GoApp : Application(), ImageLoaderFactory {
@@ -14,6 +16,9 @@ class GoApp : Application(), ImageLoaderFactory {
         super.onCreate()
         GoPreferences.initPrefs(applicationContext)
         AppCompatDelegate.setDefaultNightMode(Theming.getDefaultNightMode(applicationContext))
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
     }
 
     override fun newImageLoader() = ImageLoader.Builder(this)

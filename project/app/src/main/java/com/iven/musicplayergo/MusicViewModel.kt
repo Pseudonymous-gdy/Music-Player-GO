@@ -7,11 +7,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.iven.musicplayergo.models.Album
 import com.iven.musicplayergo.models.Music
+import com.iven.musicplayergo.recommendation.PythonRecommenderBridge
+import com.iven.musicplayergo.recommendation.RecommendationEngine
 import com.iven.musicplayergo.utils.MusicUtils
+import com.iven.musicplayergo.utils.PlaybackHistory
 import com.iven.musicplayergo.utils.Versioning
 import kotlinx.coroutines.*
 import java.io.File
-import kotlin.random.Random
 
 
 class MusicViewModel(application: Application): AndroidViewModel(application) {
@@ -53,10 +55,26 @@ class MusicViewModel(application: Application): AndroidViewModel(application) {
     var deviceMusicByFolder: Map<String, List<Music>>? = null
 
     fun getRandomMusic(): Music? {
-        deviceMusicFiltered?.shuffled()?.run {
-           return get(Random.nextInt(size))
+        val songs = deviceMusicFiltered ?: return null
+        val prefs = GoPreferences.getPrefsInstance()
+        val history = PlaybackHistory.topRecent()
+        val excludeIds = mutableSetOf<Long?>()
+        prefs.latestPlayedSong?.id?.let { excludeIds.add(it) }
+        history.take(5).forEach { entry ->
+            entry.music.id?.let { excludeIds.add(it) }
         }
-        return deviceMusicFiltered?.random()
+        val recommendation = PythonRecommenderBridge.recommendNext(
+            songs = songs,
+            history = history,
+            favorites = prefs.favorites,
+            limit = 1
+        ) ?: RecommendationEngine.recommend(
+            history = history,
+            favorites = prefs.favorites,
+            excludeIds = excludeIds,
+            limit = 1
+        ).firstOrNull()
+        return recommendation ?: songs.randomOrNull()
     }
 
     /**
@@ -235,6 +253,7 @@ class MusicViewModel(application: Application): AndroidViewModel(application) {
                 }
             }
         }
+        RecommendationEngine.refreshCatalog(deviceMusicFiltered)
         updatePreferences()
     }
 
