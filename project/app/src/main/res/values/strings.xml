@@ -107,7 +107,7 @@
     <string name="repeat_loop_enabled">∞ repeat on.</string>
     <string name="repeat_disabled">∞ repeat off.</string>
     <string name="shuffle_enabled">启用推荐算法</string>
-    <string name="shuffle_disabled">Shuffle off.</string>
+    <string name="shuffle_disabled">关闭推荐算法。</string>
     <string name="shuffle_queue_not_supported">Cannot enable shuffle while the queue is active.</string>
     <string name="continue_on_end_desc">Choose whether to continue playback or pause on completion</string>
     <string name="pause_on_end">Pause on completion on.</string>

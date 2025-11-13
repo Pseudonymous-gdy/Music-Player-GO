@@ -1,0 +1,112 @@
+[
+  {
+    "id": "lofi_beat",
+    "title": "Night Window",
+    "artist": "Mila On",
+    "album": "Late Sketches",
+    "genre": "Lo-Fi",
+    "tags": "study, instrumental, chill",
+    "duration": 168000,
+    "year": 2020,
+    "tempo": 82
+  },
+  {
+    "id": "synth_wave",
+    "title": "Neon Runner",
+    "artist": "Analog River",
+    "album": "City Lights",
+    "genre": "Synthwave",
+    "tags": "retro, driving",
+    "duration": 214000,
+    "year": 2017,
+    "tempo": 108
+  },
+  {
+    "id": "jazz_modern",
+    "title": "Dust on the Keys",
+    "artist": "Blue Lantern Trio",
+    "album": "Autumn Sessions",
+    "genre": "Modern Jazz",
+    "tags": "piano, trio, acoustic",
+    "duration": 302000,
+    "year": 2019,
+    "tempo": 124
+  },
+  {
+    "id": "indie_folk",
+    "title": "Riverbanks",
+    "artist": "Paper Trails",
+    "album": "Wooden Letters",
+    "genre": "Indie Folk",
+    "tags": "acoustic, calm, vocals",
+    "duration": 256000,
+    "year": 2018,
+    "tempo": 96
+  },
+  {
+    "id": "electro_pop",
+    "title": "Silver Echo",
+    "artist": "Polyphase",
+    "album": "Mirrors",
+    "genre": "Electropop",
+    "tags": "female vocal, upbeat",
+    "duration": 205000,
+    "year": 2021,
+    "tempo": 114
+  },
+  {
+    "id": "neo_soul",
+    "title": "Gravity Lace",
+    "artist": "Velvet Frame",
+    "album": "Sundown Glow",
+    "genre": "Neo Soul",
+    "tags": "groove, keys, chill",
+    "duration": 238000,
+    "year": 2022,
+    "tempo": 92
+  },
+  {
+    "id": "ambient_drone",
+    "title": "Northern Aurora",
+    "artist": "Glass Harbor",
+    "album": "Stillness",
+    "genre": "Ambient",
+    "tags": "drone, sleep, meditation",
+    "duration": 480000,
+    "year": 2016,
+    "tempo": 60
+  },
+  {
+    "id": "alt_rock",
+    "title": "Fracture Line",
+    "artist": "North Arc",
+    "album": "Gravity Notes",
+    "genre": "Alt Rock",
+    "tags": "band, energetic",
+    "duration": 228000,
+    "year": 2015,
+    "tempo": 130
+  },
+  {
+    "id": "classical_piano",
+    "title": "Etude in D Minor",
+    "artist": "Hana Seo",
+    "album": "Nocturnes",
+    "genre": "Classical",
+    "tags": "piano, solo",
+    "duration": 198000,
+    "year": 2014,
+    "tempo": 72
+  },
+  {
+    "id": "hiphop_lofi",
+    "title": "Fading Lines",
+    "artist": "Loop District",
+    "album": "Concrete Dreams",
+    "genre": "Lo-Fi",
+    "tags": "hiphop, vinyl, instrumental",
+    "duration": 176000,
+    "year": 2023,
+    "tempo": 88
+  }
+]

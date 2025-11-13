@@ -90,7 +90,7 @@
     <string name="pause_on_end_disabled">禁用播放完成后暂停。</string>
     <string name="pause_on_end">播放完成后暂停。</string>
     <string name="shuffle_enabled">启用推荐算法</string>
-    <string name="shuffle_disabled">随机播放已关闭。</string>
+    <string name="shuffle_disabled">关闭推荐算法。</string>
     <string name="shuffle_queue_not_supported">启用播放列表时无法开启随机播放。</string>
     <string name="equalizer_presets">预设</string>
     <string name="locale_basque">巴斯克语</string>
