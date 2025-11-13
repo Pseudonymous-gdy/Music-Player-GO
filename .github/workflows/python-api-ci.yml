@@ -26,8 +26,9 @@ jobs:
       
           # 推荐系统可能用到
           pip install pandas scikit-learn
-      
+          pip install httpx
           # 其他你可能需要的，可以继续往后加
           pip install requests
+          pip install pytest
       - name: Run tests
         run: pytest
