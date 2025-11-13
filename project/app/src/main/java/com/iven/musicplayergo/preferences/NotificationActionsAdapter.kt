@@ -17,6 +17,7 @@ class NotificationActionsAdapter: RecyclerView.Adapter<NotificationActionsAdapte
 
     private val mActions = listOf(
         NotificationAction(GoConstants.REPEAT_ACTION, GoConstants.CLOSE_ACTION), // default
+        NotificationAction(GoConstants.SHUFFLE_ACTION, GoConstants.CLOSE_ACTION),
         NotificationAction(GoConstants.REWIND_ACTION, GoConstants.FAST_FORWARD_ACTION),
         NotificationAction(GoConstants.FAVORITE_ACTION, GoConstants.CLOSE_ACTION),
         NotificationAction(GoConstants.FAVORITE_POSITION_ACTION, GoConstants.CLOSE_ACTION)

@@ -82,6 +82,8 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     private var mTabToRestore = -1
 
+    private var lastKnownShuffle = GoPreferences.getPrefsInstance().isShuffleEnabled
+
     // Queue dialog
     private var mQueueDialog: RecyclerSheet? = null
 
@@ -119,6 +121,8 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
             sBound = true
 
             mMediaPlayerHolder.mediaPlayerInterface = mMediaPlayerInterface
+            lastKnownShuffle = mMediaPlayerHolder.isShuffleEnabled
+            mMediaPlayerInterface.onShuffleChanged(lastKnownShuffle)
 
             // load music and setup UI
             mMusicViewModel.deviceMusic.observe(this@MainActivity) { returnedMusic ->
@@ -470,7 +474,8 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     }
 
     private fun openQueueFragment() {
-        if (checkIsPlayer(showError = false) && mMediaPlayerHolder.queueSongs.isNotEmpty() && mQueueDialog == null) {
+        val hasQueueSongs = mMediaPlayerHolder.queueSongs.isNotEmpty()
+        if ((hasQueueSongs || checkIsPlayer(showError = false)) && hasQueueSongs && mQueueDialog == null) {
             mQueueDialog = RecyclerSheet.newInstance(RecyclerSheet.QUEUE_TYPE).apply {
                 show(supportFragmentManager, RecyclerSheet.TAG_MODAL_RV)
                 onQueueCancelled = {
@@ -533,6 +538,14 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
         mPlayerControlsPanelBinding.playPauseButton.setOnClickListener { mMediaPlayerHolder.resumeOrPause() }
 
+        mPlayerControlsPanelBinding.shuffleButton?.apply {
+            safeClickListener { mMediaPlayerHolder.toggleShuffle() }
+            setOnLongClickListener {
+                Toast.makeText(this@MainActivity, R.string.content_shuffle, Toast.LENGTH_SHORT).show()
+                return@setOnLongClickListener true
+            }
+        }
+
         with(mPlayerControlsPanelBinding.queueButton) {
             safeClickListener {
                 openQueueFragment()
@@ -594,6 +607,8 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
                 return@setOnLongClickListener true
             }
         }
+
+        updateShuffleControls(mMediaPlayerHolder.isShuffleEnabled)
     }
 
     override fun onAppearanceChanged(isThemeChanged: Boolean) {
@@ -621,6 +636,19 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
             return
         }
         mPlayerControlsPanelBinding.playPauseButton.setImageResource(R.drawable.ic_play)
+    }
+
+    private fun updateShuffleControls(enabled: Boolean) {
+        val tint = if (enabled) {
+            Theming.resolveThemeColor(resources)
+        } else {
+            Theming.resolveWidgetsColorNormal(this)
+        }
+        mPlayerControlsPanelBinding.shuffleButton?.let { shuffleBtn ->
+            shuffleBtn.updateIconTint(tint)
+            shuffleBtn.contentDescription =
+                if (enabled) getString(R.string.shuffle_enabled) else getString(R.string.shuffle_disabled)
+        }
     }
 
     override fun onFavoriteAddedOrRemoved() {
@@ -657,6 +685,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         // If we are playing and the activity was restarted
         // update the controls panel
         with(mMediaPlayerHolder) {
+            updateShuffleControls(isShuffleEnabled)
             if (isMediaPlayer && isPlaying) {
                 onRestartSeekBarCallback()
                 updatePlayingInfo(restore = true)
@@ -711,6 +740,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
         mPlayerControlsPanelBinding.playingArtist.text =
             getString(R.string.artist_and_album, selectedSong.artist, selectedSong.album)
+        updateShuffleControls(mMediaPlayerHolder.isShuffleEnabled)
 
         mNpDialog?.run {
             updateRepeatStatus(onPlaybackCompletion = false)
@@ -1052,6 +1082,16 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     // interface to let MediaPlayerHolder update the UI media player controls.
     private val mMediaPlayerInterface = object : MediaPlayerInterface {
+
+        override fun onShuffleChanged(enabled: Boolean) {
+            updateShuffleControls(enabled)
+            if (enabled != lastKnownShuffle) {
+                val msg = if (enabled) R.string.shuffle_enabled else R.string.shuffle_disabled
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+            }
+            mNpDialog?.updateShuffleStatus(enabled)
+            lastKnownShuffle = enabled
+        }
 
         override fun onUpdateRepeatStatus() {
             mNpDialog?.updateRepeatStatus(onPlaybackCompletion = false)
