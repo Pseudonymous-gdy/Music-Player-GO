@@ -42,5 +42,7 @@ jobs:
           # 测试框架
           pip install pytest pytest-asyncio
 
+          pip install torch
+
       - name: Run tests
         run: pytest -vv
