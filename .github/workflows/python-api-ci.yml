@@ -28,6 +28,6 @@ jobs:
           pip install pandas scikit-learn
       
           # 其他你可能需要的，可以继续往后加
-          pip install requestshttpx
+          pip install requests
       - name: Run tests
         run: pytest
