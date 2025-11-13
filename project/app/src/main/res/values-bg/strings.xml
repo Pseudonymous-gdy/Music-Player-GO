@@ -150,4 +150,13 @@
     <string name="speed_3">Нормална</string>
     <string name="favorite_added">%1s (%2s) добавени към любими</string>
     <string name="error_not_ready">Не можа да се зареди музикалната библиотека! :( Махането на SD картата възстановява базата данни на Android MediaStore. Опитайте отново по-късно.</string>
+    <string name="history_sort_recent">Recently played</string>
+    <string name="history_sort_oldest">Oldest played</string>
+    <string name="history_sort_title_asc">Title A-Z</string>
+    <string name="history_sort_title_desc">Title Z-A</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_empty">No play history yet.</string>
+    <string name="history_cleared">History cleared.</string>
+    <string name="history_no_results">No matches for your search.</string>
+    <string name="history_more_options">History item options</string>
 </resources>

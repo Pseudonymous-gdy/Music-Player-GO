@@ -43,6 +43,7 @@ import com.iven.musicplayergo.models.SavedEqualizerSettings
 import com.iven.musicplayergo.ui.MainActivity
 import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
+import com.iven.musicplayergo.utils.PlaybackHistory
 import com.iven.musicplayergo.utils.Versioning
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -673,6 +674,9 @@ class MediaPlayerHolder:
         if (isPlay) {
             if (sFocusEnabled && !sHasFocus) {
                 tryToGetAudioFocus()
+            }
+            if (currentSongFM == null) {
+                currentSong?.let { PlaybackHistory.log(it, launchedBy) }
             }
             play()
         }

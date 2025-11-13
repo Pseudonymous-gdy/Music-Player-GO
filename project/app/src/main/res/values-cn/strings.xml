@@ -181,4 +181,13 @@
     <string name="locale_azerbaijani">阿塞拜疆语</string>
     <string name="locale_malayalam">马拉雅拉姆语</string>
     <string name="locale_punjabi">旁遮普语</string>
+    <string name="history_sort_recent">最近播放</string>
+    <string name="history_sort_oldest">最早播放</string>
+    <string name="history_sort_title_asc">标题 A-Z</string>
+    <string name="history_sort_title_desc">标题 Z-A</string>
+    <string name="history_clear">清除播放历史</string>
+    <string name="history_empty">尚无播放历史。</string>
+    <string name="history_cleared">播放历史已清除。</string>
+    <string name="history_no_results">没有匹配的搜索结果。</string>
+    <string name="history_more_options">历史记录更多操作</string>
 </resources>
