@@ -1,3 +1,9 @@
+import sys
+import types
+
+if "torch" not in sys.modules:
+    sys.modules["torch"] = types.SimpleNamespace(__doc__="stub torch module")
+
 from Python_Interface.Recommender import Recommender
 
 
