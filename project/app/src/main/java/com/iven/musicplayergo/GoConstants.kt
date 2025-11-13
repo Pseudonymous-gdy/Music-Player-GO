@@ -76,6 +76,7 @@ object GoConstants {
     const val NEXT_ACTION = "NEXT_GO"
     const val REWIND_ACTION = "REWIND_GO"
     const val REPEAT_ACTION = "REPEAT_GO"
+    const val SHUFFLE_ACTION = "SHUFFLE_GO"
     const val CLOSE_ACTION = "CLOSE_GO"
     const val FAVORITE_ACTION = "FAVORITE_GO"
     const val FAVORITE_POSITION_ACTION = "FAVORITE_POSITION_GO"

@@ -79,6 +79,16 @@
                 app:srcCompat="@drawable/ic_play" />
 
             <ImageButton
+                android:id="@+id/shuffle_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="?android:attr/actionBarItemBackground"
+                android:contentDescription="@string/content_shuffle"
+                android:padding="8dp"
+                app:srcCompat="@drawable/ic_shuffle" />
+
+            <ImageButton
                 android:id="@+id/queue_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
