@@ -205,7 +205,6 @@ object Theming {
     @JvmStatic
     fun getNotificationActionTitle(action: String) = when (action) {
         GoConstants.REPEAT_ACTION -> R.string.notification_actions_repeat
-        GoConstants.SHUFFLE_ACTION -> R.string.notification_actions_shuffle
         GoConstants.REWIND_ACTION -> R.string.notification_actions_fast_seeking
         GoConstants.FAVORITE_ACTION -> R.string.notification_actions_favorite
         else -> R.string.notification_actions_favorite_position
@@ -251,11 +250,6 @@ object Theming {
                 R.drawable.ic_repeat_one_disabled
             }
         }
-    }
-
-    @JvmStatic
-    fun getShuffleIcon(isNotification: Boolean): Int {
-        return R.drawable.ic_shuffle
     }
 
     @JvmStatic
