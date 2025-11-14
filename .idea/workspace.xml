@@ -5,22 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="run workflow">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoConstants.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoConstants.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoPreferences.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoPreferences.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/dialogs/NowPlaying.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/dialogs/NowPlaying.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/extensions/MusicExts.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/extensions/MusicExts.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerHolder.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerHolder.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerInterface.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerInterface.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MusicNotificationManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MusicNotificationManager.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/PlayerService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/PlayerService.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/preferences/NotificationActionsAdapter.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/preferences/NotificationActionsAdapter.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/Theming.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/Theming.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/res/layout/now_playing_cover.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/res/layout/now_playing_cover.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/res/layout/player_controls_panel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/res/layout/player_controls_panel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/res/values-cn/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/res/values-cn/strings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/res/values/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/res/values/strings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/AllMusicShuffleEspressoTest.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/HistoryFrequentlyPlayedEspressoTest.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/testhost/TestHostActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +60,7 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "dguo",
     "last_opened_file_path": "/Users/lzh/Documents/学习/app/Music-Player-GO",
     "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
   }
