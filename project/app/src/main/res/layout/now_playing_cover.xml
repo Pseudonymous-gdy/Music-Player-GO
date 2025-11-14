@@ -73,6 +73,17 @@
             app:srcCompat="@drawable/ic_favorite" />
 
         <ImageButton
+            android:id="@+id/np_shuffle"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:background="?android:attr/actionBarItemBackground"
+            android:contentDescription="@string/action_shuffle"
+            android:padding="4dp"
+            app:srcCompat="@drawable/ic_shuffle" />
+
+        <ImageButton
             android:id="@+id/np_repeat"
             android:layout_width="wrap_content"
             android:layout_height="0dp"

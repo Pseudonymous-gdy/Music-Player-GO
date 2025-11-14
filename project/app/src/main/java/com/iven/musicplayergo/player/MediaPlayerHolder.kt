@@ -44,7 +44,9 @@ import com.iven.musicplayergo.ui.MainActivity
 import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.PlaybackHistory
+import com.iven.musicplayergo.utils.RecommendationPlaybackObserver
 import com.iven.musicplayergo.utils.Versioning
+import com.iven.musicplayergo.utils.RecommendationRepository
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -148,6 +150,9 @@ class MediaPlayerHolder:
 
     var currentSong: Music? = null
     private var mPlayingSongs: List<Music>? = null
+    private var mOriginalPlayingSongs: List<Music>? = null
+    var isShuffleEnabled = false
+        private set
     var launchedBy = GoConstants.ARTIST_VIEW
 
     var currentVolumeInPercent = GoPreferences.getPrefsInstance().latestVolume
@@ -258,21 +263,83 @@ class MediaPlayerHolder:
 
     fun updateCurrentSong(song: Music?, albumSongs: List<Music>?, songLaunchedBy: String) {
         currentSong = song
-        mPlayingSongs = albumSongs
+        applyNewPlayingSongs(albumSongs)
         launchedBy = songLaunchedBy
     }
 
     fun updateCurrentSongs(sortedMusic: List<Music>?) {
         if (sortedMusic.isNullOrEmpty()) {
             currentSong?.findRestoreSorting(launchedBy)?.let { sorting ->
-                mPlayingSongs = Lists.getSortedMusicList(sorting, mPlayingSongs?.toMutableList())
+                applyNewPlayingSongs(Lists.getSortedMusicList(sorting, mPlayingSongs?.toMutableList()))
             }
             return
         }
-        mPlayingSongs = sortedMusic
+        applyNewPlayingSongs(sortedMusic)
     }
 
     fun getCurrentAlbumSize() = mPlayingSongs?.size ?: 0
+
+    fun getCurrentPlaylist(): List<Music> = mPlayingSongs?.toList() ?: emptyList()
+
+    private fun applyNewPlayingSongs(songs: List<Music>?) {
+        if (songs.isNullOrEmpty()) {
+            mPlayingSongs = songs
+            if (songs == null) {
+                mOriginalPlayingSongs = null
+            }
+            return
+        }
+        if (isShuffleEnabled) {
+            mOriginalPlayingSongs = songs.toList()
+            mPlayingSongs = shuffleSongs(songs)
+        } else {
+            mPlayingSongs = songs
+            mOriginalPlayingSongs = null
+        }
+    }
+
+    private fun shuffleSongs(songs: List<Music>?): List<Music>? {
+        if (songs.isNullOrEmpty()) return songs
+        val shuffled = songs.toMutableList()
+        val current = currentSong
+        val currentIndex = shuffled.findIndex(current)
+        if (currentIndex != -1) {
+            val playingSong = shuffled.removeAt(currentIndex)
+            shuffled.shuffle()
+            shuffled.add(0, playingSong)
+            return shuffled
+        }
+        shuffled.shuffle()
+        return shuffled
+    }
+
+    private fun reorderSongsByRecommendation(
+        songs: List<Music>?,
+        recommendationOrder: List<Long>?
+    ): List<Music>? {
+        if (songs.isNullOrEmpty()) return songs
+        if (recommendationOrder.isNullOrEmpty()) {
+            return shuffleSongs(songs)
+        }
+        val songById = songs.associateBy { it.id }
+        val currentId = currentSong?.id
+        val recommendationSet = recommendationOrder.toSet()
+        val ordered = mutableListOf<Music>()
+        currentSong?.let { ordered.add(it) }
+        recommendationOrder.forEach { id ->
+            val song = songById[id]
+            if (song != null && song.id != currentId) {
+                ordered.add(song)
+            }
+        }
+        songs.forEach { song ->
+            val id = song.id
+            if (id != currentId && !recommendationSet.contains(id)) {
+                ordered.add(song)
+            }
+        }
+        return ordered
+    }
 
     private fun openOrCloseAudioEffectAction(event: String) {
         mPlayerService.sendBroadcast(
@@ -612,8 +679,27 @@ class MediaPlayerHolder:
                 )
             }
 
-            song?.id?.toContentUri()?.let { uri ->
-                mediaPlayer.setDataSource(mPlayerService, uri)
+            var dataSourceSet = false
+            if (isShuffleEnabled) {
+                RecommendationRepository.getFeatureUrlForSong(song?.id)?.let { featureUrl ->
+                    try {
+                        mediaPlayer.setDataSource(featureUrl)
+                        dataSourceSet = true
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            if (!dataSourceSet) {
+                song?.id?.toContentUri()?.let { uri ->
+                    mediaPlayer.setDataSource(mPlayerService, uri)
+                    dataSourceSet = true
+                }
+            }
+
+            if (!dataSourceSet) {
+                return
             }
 
             mediaPlayer.prepare()
@@ -647,6 +733,7 @@ class MediaPlayerHolder:
         if (currentSong?.startFrom != 0 && !isCurrentSongFM) {
             mediaPlayer.seekTo(currentSong?.startFrom!!)
         }
+        RecommendationPlaybackObserver.onSongStarted(currentSong)
 
         if (!sPlaybackSpeedPersisted) currentPlaybackSpeed = 1.0F
 
@@ -872,6 +959,49 @@ class MediaPlayerHolder:
         getRepeatMode()
         if (updatePlaybackStatus) updatePlaybackStatus(updateUI = true)
         mMusicNotificationManager?.updateRepeatIcon()
+    }
+
+    fun toggleShuffle(recommendedOrder: List<Long>? = null): Boolean {
+        if (isShuffleEnabled) {
+            isShuffleEnabled = false
+            mOriginalPlayingSongs?.let { restored ->
+                mPlayingSongs = restored
+            }
+            mOriginalPlayingSongs = null
+            RecommendationRepository.getFeatureUrlForSong(currentSong?.id)?.let {
+                val wasPlaying = isPlaying
+                initMediaPlayer(currentSong, forceReset = true)
+                if (wasPlaying) {
+                    resumeMediaPlayer()
+                } else {
+                    state = GoConstants.PAUSED
+                }
+            }
+            return false
+        }
+        if (mPlayingSongs.isNullOrEmpty()) {
+            return false
+        }
+        isShuffleEnabled = true
+        mOriginalPlayingSongs = mPlayingSongs?.toList()
+        mPlayingSongs = reorderSongsByRecommendation(mPlayingSongs, recommendedOrder)
+        return true
+    }
+
+    fun applyRecommendationToCurrentSong(): Boolean {
+        if (!isShuffleEnabled) return false
+        val song = currentSong ?: return false
+        val hasFeature = RecommendationRepository.getFeatureUrlForSong(song.id) != null
+        if (!hasFeature) return false
+        val wasPlaying = isPlaying
+        initMediaPlayer(song, forceReset = true)
+        return if (wasPlaying) {
+            resumeMediaPlayer()
+            true
+        } else {
+            state = GoConstants.PAUSED
+            true
+        }
     }
 
     fun onUpdateFavorites() {

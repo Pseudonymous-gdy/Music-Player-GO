@@ -33,6 +33,7 @@ data class AudioUploadResponse(
     val name: String?,
     val artist: String?,
     val feature_path: String?,
+    val feature: String?,
     val meta: Map<String, Any>?,       // 会被 Gson 解析成 LinkedTreeMap
     val original_filename: String?
 )

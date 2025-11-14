@@ -32,6 +32,7 @@ import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.Popups
 import com.iven.musicplayergo.utils.Theming
 import com.iven.musicplayergo.utils.Versioning
+import com.iven.musicplayergo.utils.RecommendationRepository
 import com.iven.musicplayergo.extensions.toContentUri
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import me.zhanghai.android.fastscroll.PopupTextProvider
@@ -334,7 +335,12 @@ class AllMusicFragment : Fragment(), SearchView.OnQueryTextListener {
                                 ArchiveService.api.uploadAudio(filePart, artistBody)
                             }
 
-                            // 这里你可以把 resp.song_id / resp.feature_path 等存起来
+                            RecommendationRepository.saveFeatureMapping(
+                                localSongId = m.id,
+                                serverSongId = resp.song_id,
+                                featurePath = resp.feature_path,
+                                rawFeature = resp.feature
+                            )
                             Log.d("Upload", "上传成功: ${resp.song_id}")
                             success++
                         } catch (e: Exception) {

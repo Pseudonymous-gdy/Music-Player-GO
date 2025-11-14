@@ -8,6 +8,7 @@ import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.models.NotificationAction
 import com.iven.musicplayergo.models.SavedEqualizerSettings
 import com.iven.musicplayergo.models.Sorting
+import com.iven.musicplayergo.models.RecommendationFeature
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import java.lang.reflect.Type
@@ -29,6 +30,8 @@ class GoPreferences(context: Context) {
 
     // sortings is a list of Sorting
     private val typeSorting = Types.newParameterizedType(List::class.java, Sorting::class.java)
+    private val typeRecommendationFeatures =
+        Types.newParameterizedType(List::class.java, RecommendationFeature::class.java)
 
     var latestVolume: Int
         get() = mPrefs.getInt("latest_volume_pref", 100)
@@ -53,6 +56,10 @@ class GoPreferences(context: Context) {
     var favorites: List<Music>?
         get() = getObjectForType("favorite_songs_pref", typeFavorites)
         set(value) = putObjectForType("favorite_songs_pref", value, typeFavorites)
+
+    var recommendationFeatures: List<RecommendationFeature>?
+        get() = getObjectForType("recommendation_features_pref", typeRecommendationFeatures)
+        set(value) = putObjectForType("recommendation_features_pref", value, typeRecommendationFeatures)
 
     var queue: List<Music>?
         get() = getObjectForType("queue_songs_pref", typeFavorites)
