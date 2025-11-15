@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="run workflow">
-      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/AllMusicShuffleEspressoTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/HistoryFrequentlyPlayedEspressoTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/project/app/src/androidTest/java/com/iven/musicplayergo/testhost/TestHostActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,12 +29,12 @@
     &quot;assignee&quot;: &quot;Kumoris&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Pseudonymous-gdy/Music-Player-GO.git&quot;,
-    &quot;accountId&quot;: &quot;ac722548-8f03-4dab-8d58-70e45fbe8755&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Pseudonymous-gdy/Music-Player-GO",
+    "accountId": "ac722548-8f03-4dab-8d58-70e45fbe8755"
   }
-}</component>
+}]]></component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -60,8 +57,9 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "dguo",
-    "last_opened_file_path": "/Users/lzh/Documents/学习/app/Music-Player-GO",
+    "git-widget-placeholder": "hliu",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/lzh/Downloads/Music-Player-GO",
     "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
   }
 }]]></component>

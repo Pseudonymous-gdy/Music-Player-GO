@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Music-Player-GO",
+			"path": ".."
+		},
+		{
+			"name": "M_server",
+			"path": "../../../M_server"
+		}
+	],
+	"settings": {}
+}

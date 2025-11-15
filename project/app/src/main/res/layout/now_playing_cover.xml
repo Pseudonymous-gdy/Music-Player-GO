@@ -79,7 +79,7 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:background="?android:attr/actionBarItemBackground"
-            android:contentDescription="@string/content_shuffle"
+            android:contentDescription="@string/action_shuffle"
             android:padding="4dp"
             app:srcCompat="@drawable/ic_shuffle" />
 
