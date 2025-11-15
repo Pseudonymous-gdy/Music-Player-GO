@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master", "dguo" ,"zlu"]   # 常规 CI：构建 Debug
+    branches: [ "master", "dguo" ,"zlu", "main" ]   # 常规 CI：构建 Debug
     tags:     [ "v*" ]               # 打 tag：构建 Release 并发布
   pull_request:
   workflow_dispatch:
