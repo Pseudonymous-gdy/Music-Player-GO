@@ -203,8 +203,6 @@ class NowPlaying: BottomSheetDialogFragment() {
                     setupNPCoverButtonsToasts(npSaveTime, npLove, npEqualizer, npShuffle, this)
                 }
 
-                setupNPCoverButtonsToasts(npSaveTime, npLove, npEqualizer, npShuffle, npRepeat)
-
                 with (npPauseOnEnd) {
                     isChecked = mGoPreferences.continueOnEnd
                     setOnCheckedChangeListener { _, isChecked ->
@@ -560,17 +558,6 @@ class NowPlaying: BottomSheetDialogFragment() {
                     }
                 }
             }
-        }
-    }
-
-    fun updateShuffleStatus(enabled: Boolean) {
-        if (::mMediaControlInterface.isInitialized) {
-            val tint = if (enabled) {
-                Theming.resolveThemeColor(resources)
-            } else {
-                Theming.resolveWidgetsColorNormal(requireContext())
-            }
-            _npCoverBinding?.npShuffle?.updateIconTint(tint)
         }
     }
 
