@@ -99,6 +99,11 @@ android {
     }
 }
 
+kapt {
+    correctErrorTypes = true
+    useBuildCache = true
+}
+
 dependencies {
 // Kotlin
     //https://github.com/JetBrains/kotlin/blob/master/ChangeLog.md
@@ -130,4 +135,12 @@ dependencies {
 
     //https://github.com/coil-kt/coil/releases
     implementation 'io.coil-kt:coil:2.4.0'
+
+    //https://square.github.io/retrofit/
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    //https://square.github.io/okhttp/
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    // Gson for JSON parsing
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
