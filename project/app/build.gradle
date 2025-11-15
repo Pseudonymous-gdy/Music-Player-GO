@@ -7,6 +7,7 @@ android {
     //noinspection GradleDependency
     defaultConfig {
         applicationId "com.iven.musicplayergo"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 187
@@ -111,6 +112,10 @@ dependencies {
     //https://github.com/Kotlin/kotlinx.coroutines/blob/master/CHANGES.md
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
 
 // Support
     //https://developer.android.com/jetpack/androidx/versions
@@ -143,4 +148,21 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.5.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-intents:3.5.1'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
+
+// RecyclerViewActions
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.5.1'
+
+// For ActivityScenarioRule
+    debugImplementation 'androidx.fragment:fragment-testing:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+
+// If using ViewPager2
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+
 }
