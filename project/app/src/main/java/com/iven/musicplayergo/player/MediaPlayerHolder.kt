@@ -181,7 +181,6 @@ class MediaPlayerHolder:
     private val continueOnEnd get() = GoPreferences.getPrefsInstance().continueOnEnd
 
     var isShuffleEnabled = GoPreferences.getPrefsInstance().isShuffleEnabled
-        private set
     private val shuffleHistory = ArrayDeque<Music>()
     private var shufflePool = ArrayDeque<Music>()
 
