@@ -2,9 +2,9 @@ name: Python API CI
 
 on:
   push:
-    branches: [ hliu ]
+    branches: [ "hliu", "main" ]
   pull_request:
-    branches: [ hliu ]
+    branches: [ "hliu", "main" ]
 
 jobs:
   test:
