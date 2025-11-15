@@ -151,8 +151,6 @@ class MediaPlayerHolder:
     var currentSong: Music? = null
     private var mPlayingSongs: List<Music>? = null
     private var mOriginalPlayingSongs: List<Music>? = null
-    var isShuffleEnabled = false
-        private set
     var launchedBy = GoConstants.ARTIST_VIEW
 
     var currentVolumeInPercent = GoPreferences.getPrefsInstance().latestVolume
@@ -183,6 +181,7 @@ class MediaPlayerHolder:
     private val continueOnEnd get() = GoPreferences.getPrefsInstance().continueOnEnd
 
     var isShuffleEnabled = GoPreferences.getPrefsInstance().isShuffleEnabled
+        private set
     private val shuffleHistory = ArrayDeque<Music>()
     private var shufflePool = ArrayDeque<Music>()
 
