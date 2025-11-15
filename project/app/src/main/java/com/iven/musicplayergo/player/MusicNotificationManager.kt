@@ -152,6 +152,18 @@ class MusicNotificationManager(private val playerService: PlayerService) {
         }
     }
 
+    fun updateShuffleIcon() {
+        if (::mNotificationBuilder.isInitialized) {
+            if (notificationActions.first == GoConstants.SHUFFLE_ACTION) {
+                mNotificationActions[0] = getNotificationAction(GoConstants.SHUFFLE_ACTION)
+            }
+            if (notificationActions.second == GoConstants.SHUFFLE_ACTION) {
+                mNotificationActions[4] = getNotificationAction(GoConstants.SHUFFLE_ACTION)
+            }
+            updateNotification()
+        }
+    }
+
     fun updateFavoriteIcon() {
         if (::mNotificationBuilder.isInitialized) {
             mNotificationActions[0] =

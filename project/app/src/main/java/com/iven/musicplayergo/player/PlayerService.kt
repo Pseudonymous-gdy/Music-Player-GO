@@ -10,6 +10,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.core.content.getSystemService
 import com.iven.musicplayergo.GoConstants
@@ -71,6 +72,14 @@ class PlayerService : Service() {
                 updatePlaybackStatus = true,
                 restoreProgressCallBack = false
             )
+        }
+
+        override fun onSetShuffleMode(shuffleMode: Int) {
+            val shouldEnable = shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
+                shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_GROUP
+            if (shouldEnable != mMediaPlayerHolder.isShuffleEnabled) {
+                mMediaPlayerHolder.toggleShuffle()
+            }
         }
 
         override fun onMediaButtonEvent(mediaButtonEvent: Intent?) = handleMediaIntent(mediaButtonEvent)
@@ -177,9 +186,16 @@ class PlayerService : Service() {
                             repeat(updatePlaybackStatus = true)
                             mediaPlayerInterface.onUpdateRepeatStatus()
                         }
-                        GoConstants.CLOSE_ACTION -> if (isRunning && isMediaPlayer) {
-                            stopPlaybackService(stopPlayback = true, fromUser = true, fromFocus = false)
+                        GoConstants.SHUFFLE_ACTION -> {
+                            toggleShuffle()
+                            Unit
                         }
+                        GoConstants.CLOSE_ACTION -> {
+                            if (isRunning && isMediaPlayer) {
+                                stopPlaybackService(stopPlayback = true, fromUser = true, fromFocus = false)
+                            }
+                        }
+                        else -> Unit
                     }
                 }
             }

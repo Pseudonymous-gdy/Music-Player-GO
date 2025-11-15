@@ -92,6 +92,7 @@
     <string name="content_play">Play/pause</string>
     <string name="content_skip_next">Skip to next</string>
     <string name="content_repeat">Turn on/off selected repetition</string>
+    <string name="content_shuffle">Turn on/off shuffle playback</string>
     <!-- Messages - Errors -->
     <string name="open_git_pref_summary">Open the project webpage for more info :)</string>
     <string name="open_details_fragment">Open artist/folder\'s details</string>
@@ -113,6 +114,9 @@
     <string name="repeat_enabled">Single repetition on.</string>
     <string name="repeat_loop_enabled">∞ repeat on.</string>
     <string name="repeat_disabled">∞ repeat off.</string>
+    <string name="shuffle_enabled">Shuffle on.</string>
+    <string name="shuffle_disabled">Shuffle off.</string>
+    <string name="shuffle_queue_not_supported">Cannot enable shuffle while the queue is active.</string>
     <string name="continue_on_end_desc">Choose whether to continue playback or pause on completion</string>
     <string name="pause_on_end">Pause on completion on.</string>
     <string name="pause_on_end_disabled">Pause on completion off.</string>
@@ -206,6 +210,7 @@
     <!-- Preferences - Additional notification actions -->
     <string name="notification_actions_pref_title">Additional notification actions</string>
     <string name="notification_actions_repeat">Repeat/close</string>
+    <string name="notification_actions_shuffle">Shuffle/close</string>
     <string name="notification_actions_favorite">Add to favorites/close</string>
     <string name="notification_actions_favorite_position">Add to favorites (with position)/close</string>
     <string name="notification_actions_fast_seeking">Fast seeking</string>

@@ -164,6 +164,10 @@ class GoPreferences(context: Context) {
         get() = mPrefs.getBoolean("continue_on_end_pref", true)
         set(value) = mPrefs.edit { putBoolean("continue_on_end_pref", value) }
 
+    var isShuffleEnabled
+        get() = mPrefs.getBoolean("shuffle_pref", false)
+        set(value) = mPrefs.edit { putBoolean("shuffle_pref", value) }
+
     var hasCompletedPlayback
         get() = mPrefs.getBoolean("has_completed_playback_pref", false)
         set(value) = mPrefs.edit { putBoolean("has_completed_playback_pref", value) }
