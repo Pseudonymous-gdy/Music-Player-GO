@@ -286,7 +286,7 @@ class RNN(nn.Module):
         self.reset_parameters()
 
         # IMPORTANT: create optimizer AFTER parameters are registered
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        self.optimizer: torch.optim.Optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
     def reset_parameters(self):
         """
@@ -397,6 +397,15 @@ class RNN(nn.Module):
                 new_state[name] = tensor
 
         self.load_state_dict(new_state)
+    
+    def load_model_from_pretrained(self, pretrained_path: str):
+        '''
+        Load RNN parameters from a separate pretrained .npz file.
+        '''
+        original_storage = self.storage
+        self.storage = pretrained_path
+        self.load_model()
+        self.storage = original_storage
 
     def train_per_update(self, features: np.ndarray, reward: float, lr: float = 1e-3):
         """
