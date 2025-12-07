@@ -25,33 +25,50 @@ class HistoryFrequentlyPlayedEspressoTest {
         PlaybackHistory.clear()
 
         // 预置三首歌，其中 A 重复多次，模拟“频繁播放”
-        // TODO: 按你的 Music 数据类实际构造字段进行填充（至少 id/artist/album/title/albumId）
         val songA = com.iven.musicplayergo.models.Music(
-            id = 1L,
-            title = "Song A",
             artist = "Artist X",
+            year = 0,
+            track = 0,
+            title = "Song A",
+            displayName = "SongA.mp3",
+            duration = 120_000L,
             album = "Album X",
             albumId = 100L,
+            relativePath = "/music",
+            id = 1L,
+            launchedBy = GoConstants.ARTIST_VIEW,
             startFrom = 0,
-            launchedBy = GoConstants.ARTIST_VIEW
+            dateAdded = 0
         )
         val songB = com.iven.musicplayergo.models.Music(
-            id = 2L,
-            title = "Song B",
             artist = "Artist Y",
+            year = 0,
+            track = 0,
+            title = "Song B",
+            displayName = "SongB.mp3",
+            duration = 120_000L,
             album = "Album Y",
             albumId = 200L,
+            relativePath = "/music",
+            id = 2L,
+            launchedBy = GoConstants.ARTIST_VIEW,
             startFrom = 0,
-            launchedBy = GoConstants.ARTIST_VIEW
+            dateAdded = 0
         )
         val songC = com.iven.musicplayergo.models.Music(
-            id = 3L,
-            title = "Song C",
             artist = "Artist Z",
+            year = 0,
+            track = 0,
+            title = "Song C",
+            displayName = "SongC.mp3",
+            duration = 120_000L,
             album = "Album Z",
             albumId = 300L,
+            relativePath = "/music",
+            id = 3L,
+            launchedBy = GoConstants.ARTIST_VIEW,
             startFrom = 0,
-            launchedBy = GoConstants.ARTIST_VIEW
+            dateAdded = 0
         )
 
         // 记录播放顺序：B -> A -> C -> A（A 被频繁播放，且应在历史中“去重后置顶”）
@@ -82,7 +99,7 @@ class HistoryFrequentlyPlayedEspressoTest {
                 .check(matches(isDisplayed()))
 
             // 断言第 0 项的 title 文本
-            onView(allOf(withId(R.id.historyTitle), isDescendantOfA(nthChildOf(withId(R.id.allMusicRv), 0))))
+            onView(allOf(withId(R.id.history_title), isDescendantOfA(nthChildOf(withId(R.id.allMusicRv), 0))))
                 .check(matches(withText("Song A")))
         }
     }

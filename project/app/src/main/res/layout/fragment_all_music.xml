@@ -33,14 +33,6 @@
             android:scrollbars="none"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-        <Button
-            android:id="@+id/uploadSelectBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="选择并上传"
-            android:layout_margin="8dp"
-        />
-
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton

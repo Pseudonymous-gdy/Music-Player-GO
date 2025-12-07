@@ -42,6 +42,7 @@ import com.iven.musicplayergo.fragments.DetailsFragment
 import com.iven.musicplayergo.fragments.ErrorFragment
 import com.iven.musicplayergo.fragments.MusicContainersFragment
 import com.iven.musicplayergo.fragments.HistoryFragment
+import com.iven.musicplayergo.fragments.RecommendationsFragment
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.player.MediaPlayerHolder
 import com.iven.musicplayergo.player.MediaPlayerInterface
@@ -65,6 +66,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     // Fragments
     private var mArtistsFragment: MusicContainersFragment? = null
     private var mAllMusicFragment: AllMusicFragment? = null
+    private var mRecommendationsFragment: RecommendationsFragment? = null
     private var mFoldersFragment: MusicContainersFragment? = null
     private var mAlbumsFragment: MusicContainersFragment? = null
     private var mSettingsFragment: SettingsFragment? = null
@@ -336,6 +338,19 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
                     tabs.add(GoConstants.HISTORY_TAB)
                     mGoPreferences.activeTabs = tabs
                 }
+                if (!tabs.contains(GoConstants.RECOMMENDATIONS_TAB)) {
+                    val insertIndex = tabs.indexOf(GoConstants.SONGS_TAB).takeIf { it != -1 }
+                        ?.plus(1) ?: tabs.size
+                    tabs.add(insertIndex, GoConstants.RECOMMENDATIONS_TAB)
+                    mGoPreferences.activeTabs = tabs
+                }
+                val tabsDef = mGoPreferences.activeTabsDef.toMutableList()
+                if (!tabsDef.contains(GoConstants.RECOMMENDATIONS_TAB)) {
+                    val insertIndex = tabsDef.indexOf(GoConstants.SONGS_TAB).takeIf { it != -1 }
+                        ?.plus(1) ?: tabsDef.size
+                    tabsDef.add(insertIndex, GoConstants.RECOMMENDATIONS_TAB)
+                    mGoPreferences.activeTabsDef = tabsDef
+                }
             }
 
             if (!sLaunchedByTile) {
@@ -442,6 +457,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
             GoConstants.ARTISTS_TAB -> mArtistsFragment = MusicContainersFragment.newInstance(GoConstants.ARTIST_VIEW)
             GoConstants.ALBUM_TAB -> mAlbumsFragment = MusicContainersFragment.newInstance(GoConstants.ALBUM_VIEW)
             GoConstants.SONGS_TAB -> mAllMusicFragment = AllMusicFragment.newInstance()
+            GoConstants.RECOMMENDATIONS_TAB -> mRecommendationsFragment = RecommendationsFragment.newInstance()
             GoConstants.FOLDERS_TAB -> mFoldersFragment = MusicContainersFragment.newInstance(GoConstants.FOLDER_VIEW)
             GoConstants.HISTORY_TAB -> mHistoryFragment = HistoryFragment.newInstance()
             else -> mSettingsFragment = SettingsFragment.newInstance()
@@ -453,6 +469,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         GoConstants.ARTISTS_TAB -> mArtistsFragment ?: initFragmentAt(index)
         GoConstants.ALBUM_TAB -> mAlbumsFragment ?: initFragmentAt(index)
         GoConstants.SONGS_TAB -> mAllMusicFragment ?: initFragmentAt(index)
+        GoConstants.RECOMMENDATIONS_TAB -> mRecommendationsFragment ?: initFragmentAt(index)
         GoConstants.FOLDERS_TAB -> mFoldersFragment ?: initFragmentAt(index)
         GoConstants.HISTORY_TAB -> mHistoryFragment ?: initFragmentAt(index)
         else -> mSettingsFragment ?: initFragmentAt(index)
@@ -895,6 +912,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         mArtistsFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mAlbumsFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mAllMusicFragment?.tintSleepTimerIcon(enabled = isEnabled)
+        mRecommendationsFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mFoldersFragment?.tintSleepTimerIcon(enabled = isEnabled)
         mHistoryFragment?.tintSleepTimerIcon(enabled = isEnabled)
     }

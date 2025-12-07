@@ -1,18 +1,13 @@
 package com.iven.musicplayergo.testhost
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
-import androidx.annotation.MainThread
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.iven.musicplayergo.R
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.ui.MediaControlInterface
 import com.iven.musicplayergo.ui.UIControlInterface
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -32,48 +27,43 @@ class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlIn
     val shuffledSongsRef = AtomicReference<List<Music>?>()
     val shuffledLatch = CountDownLatch(1)
 
-    // 可选：用于给 AllMusicFragment 注入测试版 ViewModel（如项目 VM 需要）
-    var customViewModelFactory: ViewModelProvider.Factory? = null
+    private val containerId = View.generateViewId()
+    private val rootId = View.generateViewId()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val container = androidx.fragment.app.FragmentContainerView(this).apply {
-            id = R.id.content
-            layoutParams = androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
+            id = containerId
+            layoutParams = CoordinatorLayout.LayoutParams(
                 CoordinatorLayout.LayoutParams.MATCH_PARENT,
                 CoordinatorLayout.LayoutParams.MATCH_PARENT
             )
         }
-        val root = androidx.coordinatorlayout.widget.CoordinatorLayout(this).apply {
-            id = R.id.root
+        val root = CoordinatorLayout(this).apply {
+            id = rootId
             addView(container)
         }
         setContentView(root)
-
-        // 如需覆盖默认 VM 工厂：供 AllMusicFragment 通过 requireActivity() 获取
-        customViewModelFactory?.let { factory ->
-            this@TestHostActivity.defaultViewModelProviderFactory = factory
-        }
 
         if (savedInstanceState == null) {
             when (intent.getStringExtra(EXTRA_FRAGMENT)) {
                 FRAG_ALL_MUSIC -> {
                     val fragment = com.iven.musicplayergo.fragments.AllMusicFragment.newInstance()
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.content, fragment, "all_music")
+                        .replace(containerId, fragment, "all_music")
                         .commitNow()
                 }
                 FRAG_HISTORY -> {
                     val fragment = com.iven.musicplayergo.fragments.HistoryFragment()
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.content, fragment, "history")
+                        .replace(containerId, fragment, "history")
                         .commitNow()
                 }
                 else -> {
                     // 默认加载 History，方便多数测试
                     val fragment = com.iven.musicplayergo.fragments.HistoryFragment()
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.content, fragment, "history")
+                        .replace(containerId, fragment, "history")
                         .commitNow()
                 }
             }
@@ -106,7 +96,13 @@ class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlIn
     override fun onFavoritesUpdated(clear: Boolean) {}
     override fun onFavoriteAddedOrRemoved() {}
     override fun onOpenEqualizer() {}
-    override fun onOpenQueueDialog() {}
-    override fun onOpenNowPlayingDialog() {}
     override fun onOpenPlayingArtistAlbum() {}
+    override fun onAppearanceChanged(isThemeChanged: Boolean) {}
+    override fun onOpenNewDetailsFragment() {}
+    override fun onArtistOrFolderSelected(artistOrFolder: String, launchedBy: String) {}
+    override fun onAddToFilter(stringsToFilter: List<String>?) {}
+    override fun onFiltersCleared() {}
+    override fun onDenyPermission() {}
+    override fun onEnableEqualizer() {}
+    override fun onUpdateSortings() {}
 }

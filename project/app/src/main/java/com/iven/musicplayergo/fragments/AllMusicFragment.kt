@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
@@ -31,27 +29,11 @@ import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.Popups
 import com.iven.musicplayergo.utils.Theming
-import com.iven.musicplayergo.utils.Versioning
-import com.iven.musicplayergo.utils.RecommendationRepository
-import com.iven.musicplayergo.extensions.toContentUri
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import me.zhanghai.android.fastscroll.PopupTextProvider
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
-import java.io.FileOutputStream
-import com.iven.musicplayergo.network.ArchiveService
-import android.util.Log
-import retrofit2.HttpException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 
 class AllMusicFragment : Fragment(), SearchView.OnQueryTextListener {
 
@@ -113,11 +95,6 @@ class AllMusicFragment : Fragment(), SearchView.OnQueryTextListener {
                 }
             }
 
-        // 2) 选择并上传按钮逻辑（layout 里要有 @+id/uploadSelectBtn）
-        val uploadBtn = view.findViewById<View>(R.id.uploadSelectBtn)
-        uploadBtn?.setOnClickListener {
-            showUploadDialog()
-        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -210,171 +187,12 @@ class AllMusicFragment : Fragment(), SearchView.OnQueryTextListener {
 
                 GoPreferences.getPrefsInstance().allMusicSorting = mSorting
 
-            } else if (it.itemId == R.id.action_upload) {
-                showUploadDialog()
             } else if (it.itemId != R.id.action_search) {
                 mUIControlInterface.onOpenSleepTimerDialog()
             }
 
             true
         }
-    }
-
-    /**
-     * 显示上传对话框并处理上传逻辑
-     */
-    private fun showUploadDialog() {
-        val deviceList: List<Music> = mMusicViewModel.deviceMusic.value ?: emptyList()
-        if (deviceList.isEmpty()) {
-            Toast.makeText(requireContext(), "没有检测到音乐", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val titles = deviceList.map { m ->
-            m.displayName ?: m.title ?: m.relativePath?.let { p ->
-                if (Versioning.isQ()) {
-                    // Android 10+ 使用相对路径，取文件名
-                    p.split("/").lastOrNull() ?: "未知"
-                } else {
-                    // Android 10 以下使用完整路径
-                    File(p).name
-                }
-            } ?: "未知"
-        }.toTypedArray()
-
-        val checked = BooleanArray(titles.size)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("选择要上传的歌曲")
-            .setMultiChoiceItems(titles, checked) { _, which, isChecked ->
-                checked[which] = isChecked
-            }
-            .setPositiveButton("上传") { _, _ ->
-                val selectedMusic = deviceList.filterIndexed { idx, _ ->
-                    idx < checked.size && checked[idx]
-                }
-                if (selectedMusic.isEmpty()) {
-                    Toast.makeText(requireContext(), "未选择任何歌曲", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                // 协程中逐首上传到 /api/audio/upload
-                viewLifecycleOwner.lifecycleScope.launch {
-                    var success = 0
-                    var fail = 0
-                    for (m in selectedMusic) {
-                        try {
-                            val reqFile: RequestBody
-                            val filename: String
-
-                            if (Versioning.isQ()) {
-                                // Android 10+ 使用 Content URI
-                                val uri = m.id?.toContentUri()
-                                if (uri == null) {
-                                    fail++
-                                    continue
-                                }
-
-                                // 从 Content URI 读取文件并创建临时文件
-                                val inputStream = requireContext().contentResolver.openInputStream(uri)
-                                if (inputStream == null) {
-                                    fail++
-                                    continue
-                                }
-
-                                filename = m.displayName ?: m.title ?: "audio_${m.id}.mp3"
-                                val tempFile = File(requireContext().cacheDir, "upload_${System.currentTimeMillis()}_$filename")
-
-                                inputStream.use { input ->
-                                    FileOutputStream(tempFile).use { output ->
-                                        input.copyTo(output)
-                                    }
-                                }
-
-                                if (!tempFile.exists()) {
-                                    fail++
-                                    continue
-                                }
-
-                                reqFile = tempFile.asRequestBody("audio/*".toMediaTypeOrNull())
-
-                                // 上传后删除临时文件
-                                tempFile.deleteOnExit()
-                            } else {
-                                // Android 10 以下使用文件路径
-                                val path = m.relativePath
-                                if (path.isNullOrBlank()) {
-                                    fail++
-                                    continue
-                                }
-
-                                val f = File(path)
-                                if (!f.exists()) {
-                                    fail++
-                                    continue
-                                }
-
-                                filename = f.name
-                                reqFile = f.asRequestBody("audio/*".toMediaTypeOrNull())
-                            }
-
-                            val filePart = MultipartBody.Part.createFormData(
-                                name = "file",   // 必须叫 file，对上后端 file: UploadFile
-                                filename = filename,
-                                body = reqFile
-                            )
-
-                            val artistBody: RequestBody? =
-                                if (!m.artist.isNullOrBlank()) {
-                                    m.artist!!.toRequestBody("text/plain".toMediaTypeOrNull())
-                                } else {
-                                    null
-                                }
-
-                            val resp = withContext(Dispatchers.IO) {
-                                ArchiveService.api.uploadAudio(filePart, artistBody)
-                            }
-
-                            RecommendationRepository.saveFeatureMapping(
-                                localSongId = m.id,
-                                serverSongId = resp.song_id,
-                                featurePath = resp.feature_path,
-                                rawFeature = resp.feature
-                            )
-                            Log.d("Upload", "上传成功: ${resp.song_id}")
-                            success++
-                        } catch (e: Exception) {
-                            val errorMsg = when (e) {
-                                is UnknownHostException -> "无法连接到服务器，请检查网络和服务器地址"
-                                is SocketTimeoutException -> "连接超时，请检查服务器是否运行"
-                                is HttpException -> "服务器错误: ${e.code()} - ${e.message()}"
-                                else -> "上传失败: ${e.message ?: e.javaClass.simpleName}"
-                            }
-                            Log.e("Upload", "上传失败: $errorMsg", e)
-                            e.printStackTrace()
-                            fail++
-                        }
-                    }
-
-                    val message = if (fail > 0) {
-                        "上传完成: 成功 $success 首，失败 $fail 首\n请查看 Logcat 查看详细错误信息"
-                    } else {
-                        "上传完成: 成功 $success 首"
-                    }
-                    Toast.makeText(
-                        requireContext(),
-                        message,
-                        Toast.LENGTH_LONG
-                    ).show()
-                    
-                    // 在 Logcat 中输出详细信息
-                    if (fail > 0) {
-                        Log.w("Upload", "上传结果: 成功 $success 首，失败 $fail 首")
-                    }
-                }
-            }
-            .setNegativeButton("取消", null)
-            .show()
     }
 
     fun onSongVisualizationChanged() =

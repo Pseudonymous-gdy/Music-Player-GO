@@ -20,6 +20,7 @@
     <string name="artists">Artists</string>
     <string name="albums">Albums</string>
     <string name="songs">Songs</string>
+    <string name="recommendations">Recommendations</string>
     <string name="folders">Folders</string>
     <string name="history">History</string>
     <string name="play_history">Play history</string>
@@ -67,6 +68,8 @@
     <string name="recommendation_empty_result">暂无推荐结果</string>
     <string name="recommendation_queue_success">推荐歌曲已加入播放队列</string>
     <string name="recommendation_fetch_songs_failed">无法获取歌曲列表，请检查服务器</string>
+    <string name="recommendations_empty">No recommendations yet.</string>
+    <string name="recommendations_refresh">Refresh</string>
     <string name="queue_add">Enqueue</string>
     <string name="favorite_add">Favorite</string>
     <string name="filter_popup_title">Hide</string>

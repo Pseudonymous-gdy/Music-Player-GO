@@ -1,14 +1,14 @@
 package com.iven.musicplayergo
 
 import android.content.Intent
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.iven.musicplayergo.MusicViewModel
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.testhost.TestHostActivity
 import org.hamcrest.MatcherAssert.assertThat
@@ -23,38 +23,68 @@ class AllMusicShuffleEspressoTest {
     @Test
     fun all_songs_shuffle_fab_triggers_random_play() {
         // 构造一组测试音乐列表
-        // TODO: 按你的 Music 数据类实际构造字段进行填充（至少 id/artist/album/title/albumId）
         val songs = listOf(
-            Music(1L, "Song 1", "Artist A", "Album A", 11L, 0, GoConstants.ARTIST_VIEW),
-            Music(2L, "Song 2", "Artist B", "Album B", 22L, 0, GoConstants.ARTIST_VIEW),
-            Music(3L, "Song 3", "Artist C", "Album C", 33L, 0, GoConstants.ARTIST_VIEW),
-            Music(4L, "Song 4", "Artist D", "Album D", 44L, 0, GoConstants.ARTIST_VIEW),
+            Music(
+                artist = "Artist A",
+                year = 0,
+                track = 0,
+                title = "Song 1",
+                displayName = "Song 1.mp3",
+                duration = 120_000L,
+                album = "Album A",
+                albumId = 11L,
+                relativePath = "/music",
+                id = 1L,
+                launchedBy = GoConstants.ARTIST_VIEW,
+                startFrom = 0,
+                dateAdded = 0
+            ),
+            Music(
+                artist = "Artist B",
+                year = 0,
+                track = 0,
+                title = "Song 2",
+                displayName = "Song 2.mp3",
+                duration = 120_000L,
+                album = "Album B",
+                albumId = 22L,
+                relativePath = "/music",
+                id = 2L,
+                launchedBy = GoConstants.ARTIST_VIEW,
+                startFrom = 0,
+                dateAdded = 0
+            ),
+            Music(
+                artist = "Artist C",
+                year = 0,
+                track = 0,
+                title = "Song 3",
+                displayName = "Song 3.mp3",
+                duration = 120_000L,
+                album = "Album C",
+                albumId = 33L,
+                relativePath = "/music",
+                id = 3L,
+                launchedBy = GoConstants.ARTIST_VIEW,
+                startFrom = 0,
+                dateAdded = 0
+            ),
+            Music(
+                artist = "Artist D",
+                year = 0,
+                track = 0,
+                title = "Song 4",
+                displayName = "Song 4.mp3",
+                duration = 120_000L,
+                album = "Album D",
+                albumId = 44L,
+                relativePath = "/music",
+                id = 4L,
+                launchedBy = GoConstants.ARTIST_VIEW,
+                startFrom = 0,
+                dateAdded = 0
+            ),
         )
-
-        // 使用自定义 ViewModel 工厂向 AllMusicFragment 注入 deviceMusic/deviceMusicFiltered
-        // 注意：这里假设项目的 MusicViewModel 类型为 com.iven.musicplayergo.viewmodels.MusicViewModel，
-        // 且包含可观察的 LiveData<List<Music>> deviceMusic 以及列表 deviceMusicFiltered。
-        // 如有出入，请根据你的实际 VM API 调整。
-        val factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.name == "com.iven.musicplayergo.viewmodels.MusicViewModel") {
-                    // 使用动态代理或测试子类会更优；为示例简化，这里假设该 VM 有无参构造并可赋值字段
-                    val vm = modelClass.getDeclaredConstructor().newInstance()
-                    // 通过反射设置字段/属性（根据你的 VM 实际字段名调整）
-                    val deviceMusicField = modelClass.getDeclaredField("deviceMusic")
-                    deviceMusicField.isAccessible = true
-                    deviceMusicField.set(vm, MutableLiveData<List<Music>>().apply { postValue(songs) })
-
-                    val deviceMusicFilteredField = modelClass.getDeclaredField("deviceMusicFiltered")
-                    deviceMusicFilteredField.isAccessible = true
-                    deviceMusicFilteredField.set(vm, songs)
-
-                    @Suppress("UNCHECKED_CAST")
-                    return vm as T
-                }
-                return modelClass.getDeclaredConstructor().newInstance()
-            }
-        }
 
         val intent = Intent(
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext,
@@ -65,11 +95,18 @@ class AllMusicShuffleEspressoTest {
 
         ActivityScenario.launch<TestHostActivity>(intent).use { scenario ->
             scenario.onActivity { activity ->
-                activity.customViewModelFactory = factory
+                val vm = androidx.lifecycle.ViewModelProvider(
+                    activity,
+                    androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(
+                        ApplicationProvider.getApplicationContext()
+                    )
+                )[MusicViewModel::class.java]
+                vm.deviceMusic.value = songs.toMutableList()
+                vm.deviceMusicFiltered = songs.toMutableList()
             }
 
             // 等待 AllMusicFragment 完成渲染并显示 shuffle FAB
-            onView(withId(R.id.shuffleFab))
+            onView(withId(R.id.shuffle_fab))
                 .check(matches(isDisplayed()))
                 .perform(click())
 

@@ -12,13 +12,6 @@
         tools:ignore="AlwaysShowAction" />
 
     <item
-        android:id="@+id/action_upload"
-        android:icon="@drawable/ic_queue_add"
-        android:title="上传歌曲"
-        app:showAsAction="always"
-        tools:ignore="AlwaysShowAction" />
-
-    <item
         android:id="@+id/sleeptimer"
         android:icon="@drawable/ic_sleeptimer"
         android:title="@string/sleeptimer"
