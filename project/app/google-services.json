@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "460054533135",
+    "project_id": "device-streaming-656221ac",
+    "storage_bucket": "device-streaming-656221ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:460054533135:android:3d40863893a2a3b3903f7a",
+        "android_client_info": {
+          "package_name": "com.example.musicplayergo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5cqDRxs0oPDAzG0FpGfs5CtLGt3jbn_U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

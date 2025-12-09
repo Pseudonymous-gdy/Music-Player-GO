@@ -2,16 +2,12 @@ package com.iven.musicplayergo.dialogs
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.doOnPreDraw
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.iven.musicplayergo.GoConstants
 import com.iven.musicplayergo.GoPreferences
@@ -22,27 +18,14 @@ import com.iven.musicplayergo.databinding.NowPlayingCoverBinding
 import com.iven.musicplayergo.databinding.NowPlayingVolControlBinding
 import com.iven.musicplayergo.extensions.*
 import com.iven.musicplayergo.models.Music
-import com.iven.musicplayergo.MusicViewModel
 import com.iven.musicplayergo.player.MediaPlayerHolder
 import com.iven.musicplayergo.ui.MediaControlInterface
 import com.iven.musicplayergo.ui.UIControlInterface
+import com.iven.musicplayergo.utils.AnalyticsLogger
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.Popups
-import com.iven.musicplayergo.utils.RecommendationPlaybackObserver
 import com.iven.musicplayergo.utils.Theming
 import com.iven.musicplayergo.utils.Versioning
-import com.iven.musicplayergo.network.RecommendQueryRequest
-import com.iven.musicplayergo.network.RecommendService
-import com.iven.musicplayergo.network.RecommendationItem
-import com.iven.musicplayergo.network.ServerSong
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.math.min
-import kotlin.random.Random
-import kotlin.sequences.sequence
 
 
 class NowPlaying: BottomSheetDialogFragment() {
@@ -62,10 +45,6 @@ class NowPlaying: BottomSheetDialogFragment() {
     private val mMediaPlayerHolder get() = MediaPlayerHolder.getInstance()
 
     private val mGoPreferences get() = GoPreferences.getPrefsInstance()
-    private val musicViewModel by lazy {
-        ViewModelProvider(requireActivity())[MusicViewModel::class.java]
-    }
-    private var cachedServerSongs: List<ServerSong>? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -122,7 +101,12 @@ class NowPlaying: BottomSheetDialogFragment() {
         _npControlsBinding?.run {
             npSkipPrev.setOnClickListener { skip(isNext = false) }
             npFastRewind.setOnClickListener { mMediaPlayerHolder.fastSeek(isForward = false) }
-            npPlay.setOnClickListener { mMediaPlayerHolder.resumeOrPause() }
+            npPlay.setOnClickListener {
+                mMediaPlayerHolder.currentSong?.let { song ->
+                    AnalyticsLogger.logPlayButtonClick(song.title, song.artist)
+                }
+                mMediaPlayerHolder.resumeOrPause()
+            }
             npSkipNext.setOnClickListener { skip(isNext = true) }
             npFastForward.setOnClickListener { mMediaPlayerHolder.fastSeek(isForward = true) }
         }
@@ -182,9 +166,7 @@ class NowPlaying: BottomSheetDialogFragment() {
                 }
 
                 npShuffle?.setOnClickListener {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        handleShuffleButtonClick()
-                    }
+                    handleShuffleButtonClick()
                 }
                 updateNpShuffleIcon()
 
@@ -232,217 +214,9 @@ class NowPlaying: BottomSheetDialogFragment() {
         }
     }
 
-    private suspend fun handleShuffleButtonClick() {
-        val mph = mMediaPlayerHolder
-        if (mph.isShuffleEnabled) {
-            val disabled = !mph.toggleShuffle()
-            updateNpShuffleIcon()
-            Toast.makeText(
-                requireContext(),
-                if (disabled) getString(R.string.shuffle_disabled_toast) else getString(R.string.shuffle_enabled_toast),
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-
-        val serverSongs = fetchServerSongs() ?: return
-        val serverSongIds = serverSongs.map { it.id }.filter { it.isNotBlank() }
-        if (serverSongIds.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.recommendation_no_upload, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val recommendations = fetchRecommendationItems(serverSongIds) ?: return
-        if (recommendations.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.recommendation_empty_result, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val confirmed = showRecommendationSheet(recommendations) ?: return
-        val matchedSongs = mapRecommendationsToLocalSongs(confirmed)
-        val randomFallbackSong = if (matchedSongs.isEmpty()) pickRandomLocalSong() else null
-        val usingFallback = matchedSongs.isEmpty() && randomFallbackSong != null
-        val songsToPlay = matchedSongs.ifEmpty { randomFallbackSong?.let { listOf(it) } ?: emptyList() }
-        if (songsToPlay.isEmpty()) return
-
-        queueRecommendedSongs(songsToPlay, showToast = !usingFallback)
-        val enabled = mph.toggleShuffle()
+    private fun handleShuffleButtonClick() {
+        mMediaPlayerHolder.toggleShuffle()
         updateNpShuffleIcon()
-        val toastText = if (enabled) {
-            getString(R.string.shuffle_enabled_toast)
-        } else {
-            getString(R.string.shuffle_disabled_toast)
-        }
-        Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
-        if (enabled) {
-            val applied = mph.applyRecommendationToCurrentSong()
-            if (!applied) {
-                Toast.makeText(
-                    requireContext(),
-                    R.string.shuffle_feature_missing,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    private suspend fun fetchRecommendationItems(songIds: List<String>): List<RecommendationItem>? {
-        val request = RecommendQueryRequest(
-            playlist = songIds,
-            n = min(5, songIds.size)
-        )
-        return try {
-            val response = withContext(Dispatchers.IO) {
-                RecommendService.api.queryRecommendation(request)
-            }
-            response.recommendations
-        } catch (e: Exception) {
-            Log.e(TAG_RECOMMENDATION, "Failed to fetch recommendations", e)
-            Toast.makeText(
-                requireContext(),
-                R.string.recommendation_request_failed,
-                Toast.LENGTH_SHORT
-            ).show()
-            null
-        }
-    }
-
-    private suspend fun fetchServerSongs(): List<ServerSong>? {
-        cachedServerSongs?.let { return it }
-        return try {
-            val response = withContext(Dispatchers.IO) {
-                RecommendService.api.listSongs()
-            }
-            cachedServerSongs = response.songs
-            response.songs
-        } catch (e: Exception) {
-            Log.e(TAG_RECOMMENDATION, "Failed to fetch songs", e)
-            Toast.makeText(
-                requireContext(),
-                R.string.recommendation_fetch_songs_failed,
-                Toast.LENGTH_SHORT
-            ).show()
-            null
-        }
-    }
-
-    private suspend fun showRecommendationSheet(items: List<RecommendationItem>): List<RecommendationItem>? =
-        suspendCancellableCoroutine { continuation ->
-            val dialog = BottomSheetDialog(requireContext())
-            val contentView = layoutInflater.inflate(R.layout.bottom_sheet_recommendations, null)
-            val container = contentView.findViewById<LinearLayout>(R.id.recommendListContainer)
-            val confirmButton = contentView.findViewById<Button>(R.id.recommendConfirmButton)
-            val cancelButton = contentView.findViewById<Button>(R.id.recommendCancelButton)
-            if (items.isEmpty()) {
-                val emptyView = layoutInflater.inflate(R.layout.item_recommendation_song, container, false)
-                emptyView.findViewById<TextView>(R.id.recommendSongTitle).text =
-                    getString(R.string.recommend_sheet_empty)
-                emptyView.findViewById<TextView>(R.id.recommendSongSubtitle).visibility = View.GONE
-                container.addView(emptyView)
-            } else {
-                items.forEach { item ->
-                    val row = layoutInflater.inflate(R.layout.item_recommendation_song, container, false)
-                    val titleView = row.findViewById<TextView>(R.id.recommendSongTitle)
-                    val subtitleView = row.findViewById<TextView>(R.id.recommendSongSubtitle)
-                    titleView.text = item.name ?: item.id
-                    if (item.artist.isNullOrBlank()) {
-                        subtitleView.visibility = View.GONE
-                    } else {
-                        subtitleView.text = item.artist
-                        subtitleView.visibility = View.VISIBLE
-                    }
-                    container.addView(row)
-                }
-            }
-            confirmButton.setOnClickListener {
-                if (continuation.isActive) continuation.resume(items)
-                dialog.dismiss()
-            }
-            cancelButton.setOnClickListener {
-                if (continuation.isActive) continuation.resume(null)
-                dialog.dismiss()
-            }
-            dialog.setOnDismissListener {
-                if (continuation.isActive) continuation.resume(null)
-            }
-            dialog.setContentView(contentView)
-            dialog.show()
-        }
-
-    private fun mapRecommendationsToLocalSongs(items: List<RecommendationItem>): List<Music> {
-        val result = mutableListOf<Music>()
-        items.forEach { item ->
-            val song = findMusicByMetadata(
-                normalizeTitle(item.name) ?: return@forEach,
-                normalize(item.artist)
-            )
-            if (song != null) {
-                result.add(song)
-            }
-        }
-        return result
-    }
-
-    private fun findMusicByMetadata(title: String, artist: String?): Music? {
-        val candidates = sequence {
-            yieldAll(mMediaPlayerHolder.getCurrentPlaylist())
-            yieldAll(mMediaPlayerHolder.queueSongs)
-            musicViewModel.deviceMusic.value?.let { yieldAll(it) }
-        }
-        val normalizedArtist = artist
-        return candidates.firstOrNull { song ->
-            val rawTitle = song.title ?: song.displayName?.toFilenameWithoutExtension()
-            val songTitle = normalizeTitle(rawTitle)
-            val songArtist = normalize(song.artist)
-            when {
-                songTitle == null -> false
-                normalizedArtist.isNullOrBlank() -> songTitle == title
-                else -> songTitle == title && songArtist == normalizedArtist
-            }
-        }
-    }
-
-    private fun normalize(value: String?): String? =
-        value?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
-
-    private fun normalizeTitle(value: String?): String? {
-        val base = value ?: return null
-        return normalize(base)
-    }
-
-    private fun pickRandomLocalSong(): Music? {
-        val playlist = mMediaPlayerHolder.getCurrentPlaylist()
-        if (playlist.isNotEmpty()) {
-            return playlist[Random.nextInt(playlist.size)]
-        }
-        if (mMediaPlayerHolder.queueSongs.isNotEmpty()) {
-            return mMediaPlayerHolder.queueSongs[Random.nextInt(mMediaPlayerHolder.queueSongs.size)]
-        }
-        val deviceSongs = musicViewModel.deviceMusic.value
-        if (!deviceSongs.isNullOrEmpty()) {
-            return deviceSongs[Random.nextInt(deviceSongs.size)]
-        }
-        return null
-    }
-
-    private fun queueRecommendedSongs(songs: List<Music>, showToast: Boolean = true) {
-        if (songs.isEmpty()) return
-        RecommendationPlaybackObserver.trackSongs(songs)
-        with(mMediaPlayerHolder) {
-            if (isCurrentSongFM) currentSongFM = null
-            setCanRestoreQueue()
-            addSongsToNextQueuePosition(songs)
-            val first = songs.first()
-            if (canRestoreQueue && restoreQueueSong == null) {
-                restoreQueueSong = first
-            }
-            if (!isPlaying || state == GoConstants.PAUSED) {
-                startSongFromQueue(first)
-            }
-        }
-        if (showToast) {
-            Toast.makeText(requireContext(), R.string.recommendation_queue_success, Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun setupPreciseVolumeHandler() {
@@ -668,7 +442,6 @@ class NowPlaying: BottomSheetDialogFragment() {
     companion object {
 
         const val TAG_MODAL = "NP_BOTTOM_SHEET"
-        private const val TAG_RECOMMENDATION = "NPRecommendation"
 
         /**
          * Use this factory method to create a new instance of

@@ -302,6 +302,9 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         if (intent.hasExtra(GoConstants.RESTORE_FRAGMENT) && mTabToRestore == -1) {
             mTabToRestore = intent.getIntExtra(GoConstants.RESTORE_FRAGMENT, -1)
         }
+
+        AnalyticsLogger.init(this)
+        AnalyticsLogger.logScreenView("MainActivity")
     }
 
     private fun notifyError(errorType: String) {
@@ -548,7 +551,12 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     private fun initMediaButtons() {
 
-        mPlayerControlsPanelBinding.playPauseButton.setOnClickListener { mMediaPlayerHolder.resumeOrPause() }
+        mPlayerControlsPanelBinding.playPauseButton.setOnClickListener {
+            mMediaPlayerHolder.currentSong?.let { song ->
+                AnalyticsLogger.logPlayButtonClick(song.title, song.artist)
+            }
+            mMediaPlayerHolder.resumeOrPause()
+        }
 
         with(mPlayerControlsPanelBinding.queueButton) {
             safeClickListener {

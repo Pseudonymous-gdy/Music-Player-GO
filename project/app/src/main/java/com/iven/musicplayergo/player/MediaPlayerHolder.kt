@@ -42,6 +42,7 @@ import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.models.SavedEqualizerSettings
 import com.iven.musicplayergo.ui.MainActivity
 import com.iven.musicplayergo.ui.UIControlInterface
+import com.iven.musicplayergo.utils.AnalyticsLogger
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.PlaybackHistory
 import com.iven.musicplayergo.utils.RecommendationPlaybackObserver
@@ -247,7 +248,12 @@ class MediaPlayerHolder:
             addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         }
         try {
-            mPlayerService.applicationContext.registerReceiver(mPlayerBroadcastReceiver, intentFilter)
+            val ctx = mPlayerService.applicationContext
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ctx.registerReceiver(mPlayerBroadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                ctx.registerReceiver(mPlayerBroadcastReceiver, intentFilter)
+            }
         } catch (e: AndroidRuntimeException) {
             e.printStackTrace()
             LocalBroadcastManager.getInstance(mPlayerService.applicationContext).registerReceiver(mPlayerBroadcastReceiver, intentFilter)
@@ -395,6 +401,7 @@ class MediaPlayerHolder:
     override fun onCompletion(mediaPlayer: MediaPlayer) {
 
         if (isCurrentSongFM) currentSongFM = null
+        logCurrentPlaybackProgress()
 
         when {
             !continueOnEnd -> {
@@ -530,6 +537,7 @@ class MediaPlayerHolder:
     }
 
     fun pauseMediaPlayer() {
+        logCurrentPlaybackProgress()
         // Do not pause foreground service, we will need to resume likely
         MediaPlayerUtils.safePause(mediaPlayer)
         sNotificationOngoing = false
@@ -542,6 +550,16 @@ class MediaPlayerHolder:
         if (::mediaPlayerInterface.isInitialized && !isCurrentSongFM) {
             mediaPlayerInterface.onBackupSong()
         }
+    }
+
+    private fun logCurrentPlaybackProgress() {
+        if (!isMediaPlayer) return
+        val listenedSeconds = try {
+            mediaPlayer.currentPosition.toLong().coerceAtLeast(0L) / 1000
+        } catch (e: Exception) {
+            return
+        }
+        AnalyticsLogger.logSongListenDuration(currentSong, listenedSeconds)
     }
 
     fun repeatSong(startFrom: Int) {
@@ -1037,6 +1055,7 @@ class MediaPlayerHolder:
 
     fun skip(isNext: Boolean) {
         if (isCurrentSongFM) currentSongFM = null
+        logCurrentPlaybackProgress()
         when {
             isQueue != null && !canRestoreQueue -> manageQueue(isNext = isNext)
             canRestoreQueue -> manageRestoredQueue()

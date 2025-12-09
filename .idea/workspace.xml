@@ -5,7 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="run workflow">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/dialogs/NowPlaying.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/dialogs/NowPlaying.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerHolder.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/player/MediaPlayerHolder.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/project/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/project/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/project/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/project/settings.gradle" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,12 +38,12 @@
     &quot;assignee&quot;: &quot;Kumoris&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Pseudonymous-gdy/Music-Player-GO",
-    "accountId": "ac722548-8f03-4dab-8d58-70e45fbe8755"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Pseudonymous-gdy/Music-Player-GO.git&quot;,
+    &quot;accountId&quot;: &quot;ac722548-8f03-4dab-8d58-70e45fbe8755&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -47,22 +56,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "hliu",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/lzh/Downloads/Music-Player-GO",
-    "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/lzh/Downloads/Music-Player-GO&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.project.gradle&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/project/app" />
+      <recent name="$PROJECT_DIR$/project/.gradle" />
+    </key>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="" />

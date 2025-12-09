@@ -1,15 +1,18 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'com.google.gms.google-services'
+}
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
     //noinspection GradleDependency
     defaultConfig {
-        applicationId "com.iven.musicplayergo"
+        applicationId "com.example.musicplayergo"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        minSdkVersion 21
-        targetSdkVersion 33
+        minSdkVersion 23
+        targetSdkVersion 34
         versionCode 187
         versionName "4.4.24"
 
@@ -55,7 +58,6 @@ android {
             }
         }
         debug {
-            applicationIdSuffix ".debug"
             resValue "string", "app_name", "@string/app_name"
             debuggable true
         }
@@ -105,6 +107,11 @@ kapt {
     useBuildCache = true
 }
 
+repositories {
+    google()
+    mavenCentral()
+}
+
 dependencies {
 // Kotlin
     //https://github.com/JetBrains/kotlin/blob/master/ChangeLog.md
@@ -148,6 +155,9 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    implementation("com.google.firebase:firebase-analytics")
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.5.1'
@@ -164,5 +174,4 @@ dependencies {
 
 // If using ViewPager2
     implementation 'androidx.viewpager2:viewpager2:1.0.0'
-
 }
