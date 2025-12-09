@@ -1,13 +1,11 @@
 import sys
-# add the directory to the system path to avoid below import errors
+# Add the parent directory to the system path to avoid import errors
 sys.path.append("..")
 
-from Recommender import *
-import random
-import torch
-import pandas
+from Recommender import *  # noqa: F401 (kept for compatibility if you later need MusicItem, etc.)
 import numpy as np
 from typing import Optional, Dict, Any, Union
+
 
 class UserSimulator:
     """
@@ -22,9 +20,17 @@ class UserSimulator:
           A weighted combination of global_pref_t and temp_pref_t.
 
     Reward model (interpretable as satisfaction score or click probability):
+
         1. Compute a utility from the real-time preference and the current song:
                utility_t = <beta_t, x_t>
-        2. Map utility_t to a reward using either a dot or logistic mode and add noise.
+        2. Map utility_t to a reward using one of:
+
+           - "dot"      (recommended for LinUCB+RNN pretraining):
+                 reward ≈ <beta_t, x_t> + Gaussian noise
+
+           - "logistic" (more "click-probability" style):
+                 reward ≈ sigmoid(<beta_t, x_t> / temp) + noise,
+                 truncated to [0, 1].
 
     Typical usage:
       - As an environment to pretrain LinUCB+RNN or bandit + RNN models.
@@ -49,6 +55,7 @@ class UserSimulator:
         (simulates random user behavior).
     reward_mode : {"dot", "logistic"}
         - "dot":      reward ~ <beta_t, x_t> + noise
+                     (matches linear bandit / RNN reward modeling).
         - "logistic": reward ~ sigmoid(<beta_t, x_t> / temp) + noise,
                       truncated to [0, 1].
     logistic_temp : float
@@ -64,7 +71,7 @@ class UserSimulator:
         temp_decay: float = 0.9,
         merge_lambda: float = 0.3,
         noise_std: float = 0.05,
-        reward_mode: str = "logistic",
+        reward_mode: str = "dot",  # NOTE: default changed to "dot" for bandit/RNN pretraining
         logistic_temp: float = 0.5,
         seed: Optional[int] = None,
     ):
@@ -91,7 +98,7 @@ class UserSimulator:
     # ------------------------------------------------------------------
     # Initialization / reset
     # ------------------------------------------------------------------
-    def _init_global_pref(self):
+    def _init_global_pref(self) -> None:
         """
         Initialize the long-term preference vector to a random unit vector.
         """
@@ -101,7 +108,7 @@ class UserSimulator:
         self.temp_pref = np.zeros_like(v)
         self.t = 0
 
-    def reset(self, resample_global: bool = False):
+    def reset(self, resample_global: bool = False) -> None:
         """
         Reset the user state at the start of a new episode.
 
@@ -123,7 +130,7 @@ class UserSimulator:
     # ------------------------------------------------------------------
     # Preference updates
     # ------------------------------------------------------------------
-    def _update_global_pref(self):
+    def _update_global_pref(self) -> None:
         """
         Apply a very small random drift to the long-term preference.
         This keeps the user stable but not completely static.
@@ -133,7 +140,7 @@ class UserSimulator:
         # Normalize to avoid exploding norms
         self.global_pref /= (np.linalg.norm(self.global_pref) + 1e-8)
 
-    def _update_temp_pref(self, x_t: np.ndarray):
+    def _update_temp_pref(self, x_t: np.ndarray) -> None:
         """
         Update the short-term preference based on the current song feature x_t.
 
@@ -150,6 +157,11 @@ class UserSimulator:
             beta_t = (1 - merge_lambda) * global_pref_t
                      + merge_lambda * temp_pref_t,
         then normalize it to a unit vector.
+
+        Returns
+        -------
+        beta_t : np.ndarray, shape (dim,)
+            Real-time preference vector.
         """
         beta = (1.0 - self.merge_lambda) * self.global_pref + self.merge_lambda * self.temp_pref
         beta /= (np.linalg.norm(beta) + 1e-8)

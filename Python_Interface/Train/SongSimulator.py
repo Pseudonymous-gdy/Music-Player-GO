@@ -41,7 +41,7 @@ class SongSimulator:
         dim: int,
         n_songs: int = 500,
         n_genres: int = 8,
-        feature_noise_std: float = 0.3,
+        feature_noise_std: float = 0.1,
         normalize_features: bool = True,
         popularity_mode: str = "zipf",
         zipf_alpha: float = 1.1,
