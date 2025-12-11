@@ -6,6 +6,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.request.CachePolicy
 import com.iven.musicplayergo.utils.Theming
+import com.iven.musicplayergo.utils.AnalyticsLogger
 
 
 class GoApp : Application(), ImageLoaderFactory {
@@ -13,6 +14,7 @@ class GoApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         GoPreferences.initPrefs(applicationContext)
+        AnalyticsLogger.init(this)
         AppCompatDelegate.setDefaultNightMode(Theming.getDefaultNightMode(applicationContext))
     }
 

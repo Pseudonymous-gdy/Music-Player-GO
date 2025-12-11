@@ -14,6 +14,7 @@ import com.iven.musicplayergo.extensions.toFormattedDuration
 import com.iven.musicplayergo.models.Music
 import com.iven.musicplayergo.models.Sorting
 import com.iven.musicplayergo.ui.UIControlInterface
+import com.iven.musicplayergo.utils.AnalyticsLogger
 import java.util.*
 
 @SuppressLint("DefaultLocale")
@@ -200,6 +201,7 @@ object Lists {
         song?.copy(startFrom = playerPosition, launchedBy = launchedBy)?.let { savedSong ->
             if (!favorites.contains(savedSong)) {
                 favorites.add(savedSong)
+                AnalyticsLogger.logFavoriteAction(savedSong, "add")
 
                 var msg = context.getString(
                     R.string.favorite_added,
@@ -216,6 +218,7 @@ object Lists {
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             } else if (canRemove) {
                 favorites.remove(savedSong)
+                AnalyticsLogger.logFavoriteAction(savedSong, "remove")
             }
             GoPreferences.getPrefsInstance().favorites = favorites
         }

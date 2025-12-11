@@ -41,6 +41,7 @@ import com.iven.musicplayergo.ui.UIControlInterface
 import com.iven.musicplayergo.utils.Lists
 import com.iven.musicplayergo.utils.Popups
 import com.iven.musicplayergo.utils.RecommendationRepository
+import com.iven.musicplayergo.utils.AnalyticsLogger
 import com.iven.musicplayergo.utils.Theming
 import com.iven.musicplayergo.utils.Versioning
 import java.util.Locale
@@ -76,6 +77,7 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     private var displayedSongs: List<Music> = emptyList()
     private var currentQuery: String = ""
     private var isLoading = false
+    private var screenEnterTimestamp = 0L
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -88,6 +90,10 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     override fun onDestroyView() {
+        AnalyticsLogger.logTabDuration(
+            "recommendations_fragment",
+            System.currentTimeMillis() - screenEnterTimestamp
+        )
         super.onDestroyView()
         _binding = null
     }
@@ -108,6 +114,8 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
         setupFab()
         binding?.uploadSelectBtn?.setOnClickListener { showUploadDialog() }
         setupViewModel()
+        screenEnterTimestamp = System.currentTimeMillis()
+        AnalyticsLogger.logScreenView("Recommendations", "RecommendationsFragment")
     }
 
     private fun setupToolbar() {
@@ -195,6 +203,7 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     private fun refreshRecommendations() {
+        AnalyticsLogger.logRefreshRecommendations("user_refresh")
         if (isLoading) return
         setLoading(true)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -206,6 +215,17 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     private suspend fun fetchRecommendations(): List<Music> {
+        AnalyticsLogger.requestPredictions(topK = 10)?.recommendations?.takeIf { it.isNotEmpty() }?.let { predictions ->
+            val mapped = mapRecommendationsToLocalSongs(
+                predictions,
+                mMusicViewModel.deviceMusic.value.orEmpty()
+            )
+            if (mapped.isNotEmpty()) {
+                AnalyticsLogger.logPredictionResult("behavior_events", mapped.size)
+                return mapped
+            }
+        }
+
         val features = RecommendationRepository.getAllFeatures()
         val serverIds = features.mapNotNull { it.serverSongId }
         if (serverIds.isEmpty()) {
@@ -233,6 +253,8 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
         )
         if (mapped.isEmpty()) {
             Toast.makeText(requireContext(), R.string.recommendation_no_local_match, Toast.LENGTH_SHORT).show()
+        } else {
+            AnalyticsLogger.logPredictionResult("feature_based", mapped.size)
         }
         return mapped
     }
@@ -413,6 +435,9 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     override fun onQueryTextChange(newText: String?): Boolean {
+        newText?.takeIf { it.isNotBlank() }?.let {
+            AnalyticsLogger.logSearch(it, "recommendations")
+        }
         applyQuery(newText)
         return false
     }
@@ -524,6 +549,11 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
                     )
 
                     root.setOnClickListener {
+                        AnalyticsLogger.logRecommendationClick(
+                            itemSong,
+                            bindingAdapterPosition,
+                            currentQuery
+                        )
                         with(MediaPlayerHolder.getInstance()) {
                             if (isCurrentSongFM) currentSongFM = null
                         }

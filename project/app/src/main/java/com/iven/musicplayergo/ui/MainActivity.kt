@@ -84,6 +84,9 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     private var mTabToRestore = -1
 
+    private var currentTabStart = 0L
+    private var currentTabName: String = GoConstants.SONGS_TAB
+
     // Queue dialog
     private var mQueueDialog: RecyclerSheet? = null
 
@@ -183,6 +186,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     }
 
     override fun onDestroy() {
+        flushTabDuration()
         super.onDestroy()
         equalizerLauncher.unregister()
         mMusicViewModel.cancel()
@@ -204,6 +208,9 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     override fun onResume() {
         super.onResume()
+        if (currentTabStart == 0L) {
+            trackTabChange(mMainActivityBinding.viewPager2.currentItem)
+        }
         if (mMediaPlayerHolder.isMediaPlayer && !mMediaPlayerHolder.isSongFromPrefs) {
             mMediaPlayerHolder.onRestartSeekBarCallback()
         }
@@ -212,6 +219,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     // Pause SeekBar callback
     override fun onPause() {
         super.onPause()
+        flushTabDuration()
 
         if (mMediaPlayerHolder.isMediaPlayer && !mMediaPlayerHolder.isSongFromPrefs) {
             if (!mMediaPlayerHolder.isCurrentSongFM) {
@@ -386,6 +394,24 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         handleIntent(intent)
     }
 
+    private fun trackTabChange(position: Int) {
+        val now = System.currentTimeMillis()
+        if (currentTabStart > 0) {
+            AnalyticsLogger.logTabDuration(currentTabName, now - currentTabStart)
+        }
+        currentTabName = mGoPreferences.activeTabs.toList().getOrElse(position) { "unknown" }
+        currentTabStart = now
+        AnalyticsLogger.logTabView(currentTabName, position)
+    }
+
+    private fun flushTabDuration() {
+        if (currentTabStart > 0) {
+            val now = System.currentTimeMillis()
+            AnalyticsLogger.logTabDuration(currentTabName, now - currentTabStart)
+            currentTabStart = 0L
+        }
+    }
+
     private fun initViewPager() {
         val pagerAdapter = ScreenSlidePagerAdapter(this)
         with(mMainActivityBinding.viewPager2) {
@@ -396,6 +422,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
                     super.onPageSelected(position)
                     mArtistsFragment?.stopActionMode()
                     mFoldersFragment?.stopActionMode()
+                    trackTabChange(position)
                 }
             })
             reduceDragSensitivity()
@@ -453,6 +480,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
             select()
             icon?.setTint(Theming.resolveThemeColor(resources))
         }
+        trackTabChange(mMainActivityBinding.viewPager2.currentItem)
     }
 
     private fun initFragmentAt(position: Int): Fragment {
@@ -856,6 +884,7 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
     }
 
     override fun onSongSelected(song: Music?, songs: List<Music>?, songLaunchedBy: String) {
+        AnalyticsLogger.logSongSelected(song, songLaunchedBy)
         with(mMediaPlayerHolder) {
             if (isSongFromPrefs) isSongFromPrefs = false
             if (!isPlay) isPlay = true

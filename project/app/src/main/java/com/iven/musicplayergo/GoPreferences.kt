@@ -69,6 +69,18 @@ class GoPreferences(context: Context) {
         get() = getObjectForType("play_history_pref", typeHistoryEntries)
         set(value) = putObjectForType("play_history_pref", value, typeHistoryEntries)
 
+    var analyticsSessionId: String?
+        get() = mPrefs.getString("analytics_session_id", null)
+        set(value) = mPrefs.edit { putString("analytics_session_id", value) }
+
+    var analyticsSessionStartedAt: Long
+        get() = mPrefs.getLong("analytics_session_started_at", 0L)
+        set(value) = mPrefs.edit { putLong("analytics_session_started_at", value) }
+
+    var analyticsSequence: Long
+        get() = mPrefs.getLong("analytics_sequence", 0L)
+        set(value) = mPrefs.edit { putLong("analytics_sequence", value) }
+
     var isQueue: Music?
         get() = getObjectForClass("is_queue_pref", Music::class.java)
         set(value) = putObjectForClass("is_queue_pref", value, Music::class.java)
