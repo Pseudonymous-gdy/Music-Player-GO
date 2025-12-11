@@ -6,15 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="run workflow">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoApp.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoApp.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoPreferences.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/GoPreferences.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/fragments/RecommendationsFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/fragments/RecommendationsFragment.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/app/proguard-rules.pro" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/proguard-rules.pro" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/ui/MainActivity.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/AnalyticsLogger.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/AnalyticsLogger.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/Lists.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project/app/src/main/java/com/iven/musicplayergo/utils/Lists.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/project/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/build/reports/problems/problems-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/project/build/reports/problems/problems-report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/project/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -96,7 +96,7 @@ android {
     }
 
 
-    namespace 'com.iven.musicplayergo'
+    namespace 'com.example.musicplayergo'
     lint {
         disable 'MissingTranslation', 'AllowBackup', 'GoogleAppIndexingWarning'
     }
