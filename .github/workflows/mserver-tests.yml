@@ -41,7 +41,7 @@ jobs:
           if [ -f tests/requirements.txt ]; then
             pip install -r tests/requirements.txt
           fi
-          pip install pytest
+          pip install pytest torch
 
       - name: Run tests
         run: |
