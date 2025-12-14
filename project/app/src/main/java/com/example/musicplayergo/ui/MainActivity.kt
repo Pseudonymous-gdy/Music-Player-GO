@@ -577,12 +577,29 @@ class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
         }
     }
 
+    private fun logUserAction(actionType: String, details: Map<String, Any>? = null) {
+        UserActionLogger.logAction(applicationContext, actionType, details)
+    }
+
     private fun initMediaButtons() {
 
         mPlayerControlsPanelBinding.playPauseButton.setOnClickListener {
-            mMediaPlayerHolder.currentSong?.let { song ->
-                AnalyticsLogger.logPlayButtonClick(song.title, song.artist)
+            val song = mMediaPlayerHolder.currentSong
+
+            song?.let {
+                AnalyticsLogger.logPlayButtonClick(it.title, it.artist)
             }
+
+            mutableMapOf<String, Any>(
+                "action_source" to "mini_player",
+                "is_playing_before" to mMediaPlayerHolder.isPlaying
+            ).also { details ->
+                song?.id?.let { details["song_id"] = it }
+                song?.title?.let { details["song_title"] = it }
+                song?.artist?.let { details["artist"] = it }
+                logUserAction("click_play", details)
+            }
+
             mMediaPlayerHolder.resumeOrPause()
         }
 

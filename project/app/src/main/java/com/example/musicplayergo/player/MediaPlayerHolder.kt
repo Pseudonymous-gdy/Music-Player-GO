@@ -533,11 +533,24 @@ class MediaPlayerHolder:
 
             updatePlaybackStatus(updateUI = true)
             startForeground()
+
+            // Log play action to Firestore
+            AnalyticsLogger.logPlayAction(currentSong)
         }
     }
 
     fun pauseMediaPlayer() {
+        val playedDuration = try {
+            if (isMediaPlayer) mediaPlayer.currentPosition.toLong() else null
+        } catch (e: Exception) {
+            null
+        }
+
         logCurrentPlaybackProgress()
+
+        // Log pause action to Firestore
+        AnalyticsLogger.logPauseAction(currentSong, playedDuration)
+
         // Do not pause foreground service, we will need to resume likely
         MediaPlayerUtils.safePause(mediaPlayer)
         sNotificationOngoing = false
@@ -1056,6 +1069,10 @@ class MediaPlayerHolder:
     fun skip(isNext: Boolean) {
         if (isCurrentSongFM) currentSongFM = null
         logCurrentPlaybackProgress()
+
+        // Log skip action to Firestore
+        AnalyticsLogger.logSkipAction(currentSong, isNext)
+
         when {
             isQueue != null && !canRestoreQueue -> manageQueue(isNext = isNext)
             canRestoreQueue -> manageRestoredQueue()

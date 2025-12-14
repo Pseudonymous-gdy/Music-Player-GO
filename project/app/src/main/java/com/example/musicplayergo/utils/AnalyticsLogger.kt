@@ -11,7 +11,10 @@ import com.example.musicplayergo.network.BehaviorEventPayload
 import com.example.musicplayergo.network.BehaviorPredictResponse
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 object AnalyticsLogger {
@@ -22,6 +25,9 @@ object AnalyticsLogger {
     private var firebaseAnalytics: FirebaseAnalytics? = null
     private val prefs get() = GoPreferences.getPrefsInstance()
     private val sequenceCounter by lazy { AtomicLong(prefs.analyticsSequence) }
+
+    // CoroutineScope for Firestore uploads
+    private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private fun ensureSessionId(): String {
         val now = System.currentTimeMillis()
@@ -60,6 +66,9 @@ object AnalyticsLogger {
             Log.e(TAG, "   ✗ Firebase init failed; analytics disabled", e)
             Log.e(TAG, "   Error: ${e.message}")
         }
+
+        // Initialize Firestore Logger
+        FirestoreLogger.init(context.applicationContext)
 
         val sessionId = ensureSessionId()
         Log.d(TAG, "   Session ID: ${sessionId.take(8)}...")
@@ -203,6 +212,83 @@ object AnalyticsLogger {
                 "action" to action
             )
         )
+
+        // Upload to Firestore
+        analyticsScope.launch {
+            val sessionId = ensureSessionId()
+            val sequence = sequenceCounter.get()
+
+            if (action == "add") {
+                FirestoreLogger.logFavoriteAddEvent(sessionId, sequence, song)
+            } else if (action == "remove") {
+                FirestoreLogger.logFavoriteRemoveEvent(sessionId, sequence, song)
+            }
+        }
+    }
+
+    fun logPlayAction(song: Music?) {
+        logEvent(
+            "play_action",
+            mapOf(
+                "song_id" to (song?.id ?: -1),
+                "title" to song?.title,
+                "artist" to song?.artist
+            )
+        )
+
+        // Upload to Firestore
+        analyticsScope.launch {
+            FirestoreLogger.logPlayEvent(
+                ensureSessionId(),
+                sequenceCounter.get(),
+                song
+            )
+        }
+    }
+
+    fun logPauseAction(song: Music?, playedDuration: Long? = null) {
+        logEvent(
+            "pause_action",
+            mapOf(
+                "song_id" to (song?.id ?: -1),
+                "title" to song?.title,
+                "artist" to song?.artist,
+                "played_duration" to playedDuration
+            )
+        )
+
+        // Upload to Firestore
+        analyticsScope.launch {
+            FirestoreLogger.logPauseEvent(
+                ensureSessionId(),
+                sequenceCounter.get(),
+                song,
+                playedDuration
+            )
+        }
+    }
+
+    fun logSkipAction(song: Music?, isNext: Boolean) {
+        val direction = if (isNext) "next" else "previous"
+        logEvent(
+            "skip_action",
+            mapOf(
+                "song_id" to (song?.id ?: -1),
+                "title" to song?.title,
+                "artist" to song?.artist,
+                "direction" to direction
+            )
+        )
+
+        // Upload to Firestore
+        analyticsScope.launch {
+            FirestoreLogger.logSkipEvent(
+                ensureSessionId(),
+                sequenceCounter.get(),
+                song,
+                direction
+            )
+        }
     }
 
     suspend fun requestPredictions(topK: Int = 10): BehaviorPredictResponse? =

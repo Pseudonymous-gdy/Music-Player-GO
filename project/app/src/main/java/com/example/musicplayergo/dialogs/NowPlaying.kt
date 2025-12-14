@@ -24,6 +24,7 @@ import com.example.musicplayergo.ui.UIControlInterface
 import com.example.musicplayergo.utils.AnalyticsLogger
 import com.example.musicplayergo.utils.Lists
 import com.example.musicplayergo.utils.Popups
+import com.example.musicplayergo.utils.UserActionLogger
 import com.example.musicplayergo.utils.Theming
 import com.example.musicplayergo.utils.Versioning
 
@@ -79,6 +80,22 @@ class NowPlaying: BottomSheetDialogFragment() {
         setupView()
     }
 
+    private fun logUserAction(actionType: String, details: Map<String, Any>? = null) {
+        context?.let { UserActionLogger.logAction(it, actionType, details) }
+    }
+
+    private fun buildActionDetails(source: String): MutableMap<String, Any> {
+        val details = mutableMapOf<String, Any>(
+            "action_source" to source
+        )
+        (mMediaPlayerHolder.currentSongFM ?: mMediaPlayerHolder.currentSong)?.let { song ->
+            song.id?.let { details["song_id"] = it }
+            song.title?.let { details["song_title"] = it }
+            song.artist?.let { details["artist"] = it }
+        }
+        return details
+    }
+
     private fun setupView() {
         _nowPlayingBinding?.run {
             npSong.isSelected = true
@@ -99,15 +116,28 @@ class NowPlaying: BottomSheetDialogFragment() {
         }
 
         _npControlsBinding?.run {
-            npSkipPrev.setOnClickListener { skip(isNext = false) }
+            npSkipPrev.setOnClickListener {
+                val details = buildActionDetails("now_playing")
+                details["direction"] = "previous"
+                logUserAction("click_previous_song", details)
+                skip(isNext = false)
+            }
             npFastRewind.setOnClickListener { mMediaPlayerHolder.fastSeek(isForward = false) }
             npPlay.setOnClickListener {
                 mMediaPlayerHolder.currentSong?.let { song ->
                     AnalyticsLogger.logPlayButtonClick(song.title, song.artist)
                 }
+                val details = buildActionDetails("now_playing")
+                details["is_playing_before"] = mMediaPlayerHolder.isPlaying
+                logUserAction("click_play", details)
                 mMediaPlayerHolder.resumeOrPause()
             }
-            npSkipNext.setOnClickListener { skip(isNext = true) }
+            npSkipNext.setOnClickListener {
+                val details = buildActionDetails("now_playing")
+                details["direction"] = "next"
+                logUserAction("click_next_song", details)
+                skip(isNext = true)
+            }
             npFastForward.setOnClickListener { mMediaPlayerHolder.fastSeek(isForward = true) }
         }
 

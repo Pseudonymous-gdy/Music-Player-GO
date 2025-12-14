@@ -1,14 +1,18 @@
-package com.example.musicplayergo.fragments
+package com.iven.musicplayergo.fragments
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
@@ -18,32 +22,32 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.example.musicplayergo.GoConstants
-import com.example.musicplayergo.MusicViewModel
-import com.example.musicplayergo.R
-import com.example.musicplayergo.databinding.FragmentRecommendationsBinding
-import com.example.musicplayergo.databinding.MusicItemBinding
-import com.example.musicplayergo.extensions.handleViewVisibility
-import com.example.musicplayergo.extensions.setTitleColor
-import com.example.musicplayergo.extensions.toFormattedDate
-import com.example.musicplayergo.extensions.toFormattedDuration
-import com.example.musicplayergo.extensions.toName
-import com.example.musicplayergo.extensions.toFilenameWithoutExtension
-import com.example.musicplayergo.extensions.toContentUri
-import com.example.musicplayergo.models.Music
-import com.example.musicplayergo.network.RecommendationItem
-import com.example.musicplayergo.network.RecommendQueryRequest
-import com.example.musicplayergo.network.RecommendService
-import com.example.musicplayergo.network.ArchiveService
-import com.example.musicplayergo.player.MediaPlayerHolder
-import com.example.musicplayergo.ui.MediaControlInterface
-import com.example.musicplayergo.ui.UIControlInterface
-import com.example.musicplayergo.utils.Lists
-import com.example.musicplayergo.utils.Popups
-import com.example.musicplayergo.utils.RecommendationRepository
-import com.example.musicplayergo.utils.AnalyticsLogger
-import com.example.musicplayergo.utils.Theming
-import com.example.musicplayergo.utils.Versioning
+import com.iven.musicplayergo.GoConstants
+import com.iven.musicplayergo.MusicViewModel
+import com.iven.musicplayergo.R
+import com.iven.musicplayergo.databinding.FragmentRecommendationsBinding
+import com.iven.musicplayergo.databinding.MusicItemBinding
+import com.iven.musicplayergo.extensions.handleViewVisibility
+import com.iven.musicplayergo.extensions.setTitleColor
+import com.iven.musicplayergo.extensions.toFormattedDate
+import com.iven.musicplayergo.extensions.toFormattedDuration
+import com.iven.musicplayergo.extensions.toName
+import com.iven.musicplayergo.extensions.toFilenameWithoutExtension
+import com.iven.musicplayergo.extensions.toContentUri
+import com.iven.musicplayergo.models.Music
+import com.iven.musicplayergo.network.RecommendationItem
+import com.iven.musicplayergo.network.RecommendQueryRequest
+import com.iven.musicplayergo.network.RecommendService
+import com.iven.musicplayergo.network.ArchiveService
+import com.iven.musicplayergo.player.MediaPlayerHolder
+import com.iven.musicplayergo.ui.MediaControlInterface
+import com.iven.musicplayergo.ui.UIControlInterface
+import com.iven.musicplayergo.utils.Lists
+import com.iven.musicplayergo.utils.Popups
+import com.iven.musicplayergo.utils.RecommendationRepository
+import com.iven.musicplayergo.utils.AnalyticsLogger
+import com.iven.musicplayergo.utils.Theming
+import com.iven.musicplayergo.utils.Versioning
 import java.util.Locale
 import java.io.File
 import java.io.FileOutputStream
@@ -215,34 +219,34 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     private suspend fun fetchRecommendations(): List<Music> {
-        AnalyticsLogger.requestPredictions(topK = 10)?.recommendations?.takeIf { it.isNotEmpty() }?.let { predictions ->
-            val mapped = mapRecommendationsToLocalSongs(
-                predictions,
-                mMusicViewModel.deviceMusic.value.orEmpty()
-            )
-            if (mapped.isNotEmpty()) {
-                AnalyticsLogger.logPredictionResult("behavior_events", mapped.size)
-                return mapped
-            }
-        }
-
         val features = RecommendationRepository.getAllFeatures()
         val serverIds = features.mapNotNull { it.serverSongId }
-        if (serverIds.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.recommendation_no_upload, Toast.LENGTH_SHORT).show()
-            return emptyList()
-        }
 
+        // 简化请求：不发送 playlist，让服务器推荐所有可用歌曲
+        // 这样可以避免因为排除所有候选而导致 400 错误
+        // 服务器会基于所有可用歌曲进行推荐
         val request = RecommendQueryRequest(
-            playlist = serverIds,
-            n = min(10, serverIds.size * 2)
+            user_id = RecommendationRepository.getUserId(),  // 添加用户ID
+            playlist = emptyList(),  // 不发送 playlist，避免排除问题
+            candidates = emptyList(),  // 不指定候选，使用服务器上所有歌曲
+            exclude_playlist = false,  // 不排除
+            n = 10,
+            policy = RecommendationRepository.getRecommendationPolicy()  // 使用保存的策略
         )
+
+        Log.d(TAG, "发送推荐请求: playlist=${request.playlist.size}, candidates=${request.candidates.size}, exclude=${request.exclude_playlist}, n=${request.n}")
+
         val response = try {
             withContext(Dispatchers.IO) {
                 RecommendService.api.queryRecommendation(request)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch recommendations", e)
+            // 打印更详细的错误信息
+            if (e is retrofit2.HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.e(TAG, "HTTP Error: ${e.code()}, body: $errorBody")
+            }
             Toast.makeText(requireContext(), R.string.recommendation_request_failed, Toast.LENGTH_SHORT).show()
             return emptyList()
         }
@@ -252,9 +256,20 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
             mMusicViewModel.deviceMusic.value.orEmpty()
         )
         if (mapped.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.recommendation_no_local_match, Toast.LENGTH_SHORT).show()
+            // 如果服务器返回了推荐但本地没有匹配，或者服务器返回空结果
+            if (response.recommendations.isEmpty()) {
+                // 服务器返回空结果，可能是没有可用的推荐
+                if (serverIds.isEmpty()) {
+                    Toast.makeText(requireContext(), R.string.recommendation_no_upload, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), R.string.recommendation_no_local_match, Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // 服务器返回了推荐但本地没有匹配
+                Toast.makeText(requireContext(), R.string.recommendation_no_local_match, Toast.LENGTH_SHORT).show()
+            }
         } else {
-            AnalyticsLogger.logPredictionResult("feature_based", mapped.size)
+            AnalyticsLogger.logPredictionResult("recommendation_api", mapped.size)
         }
         return mapped
     }
@@ -288,9 +303,136 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     }
 
     /**
+     * 显示用户登录对话框
+     */
+    private fun showUserLoginDialog(onLoginSuccess: (userId: String, policy: String) -> Unit) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(
+            android.R.layout.simple_list_item_1, null
+        ).apply {
+            // 创建一个自定义布局
+        }
+
+        // 创建自定义布局
+        val layout = android.widget.LinearLayout(requireContext()).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(64, 32, 64, 32)
+        }
+
+        // 用户ID输入框
+        val userIdEditText = EditText(requireContext()).apply {
+            hint = "请输入用户ID"
+            setText(RecommendationRepository.getUserId())
+            inputType = InputType.TYPE_CLASS_TEXT
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
+        }
+        layout.addView(userIdEditText)
+
+        // 密码输入框（假装）
+        val passwordEditText = EditText(requireContext()).apply {
+            hint = "请输入密码"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
+        }
+        layout.addView(passwordEditText)
+
+        // 推荐模式选择
+        val policyLabel = android.widget.TextView(requireContext()).apply {
+            text = "推荐模式："
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 16, 0, 16)
+            }
+        }
+        layout.addView(policyLabel)
+
+        val policyRadioGroup = RadioGroup(requireContext()).apply {
+            orientation = RadioGroup.HORIZONTAL
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val linucbRadio = RadioButton(requireContext()).apply {
+            text = "LinUCB"
+            id = View.generateViewId()
+        }
+        val linucbPlusRadio = RadioButton(requireContext()).apply {
+            text = "LinUCB+"
+            id = View.generateViewId()
+        }
+
+        policyRadioGroup.addView(linucbRadio)
+        policyRadioGroup.addView(linucbPlusRadio)
+
+        // 设置默认选中
+        val currentPolicy = RecommendationRepository.getRecommendationPolicy()
+        when (currentPolicy) {
+            "LinUCB+" -> linucbPlusRadio.isChecked = true
+            else -> linucbRadio.isChecked = true
+        }
+
+        layout.addView(policyRadioGroup)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("用户登录")
+            .setView(layout)
+            .setPositiveButton("确定") { _, _ ->
+                val userId = userIdEditText.text.toString().trim()
+                val password = passwordEditText.text.toString() // 假装使用，实际不验证
+                val selectedPolicy = when {
+                    linucbPlusRadio.isChecked -> "LinUCB+"
+                    else -> "LinUCB"
+                }
+
+                if (userId.isBlank()) {
+                    Toast.makeText(requireContext(), "用户ID不能为空", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                // 保存用户ID和推荐策略
+                RecommendationRepository.saveUserId(userId)
+                RecommendationRepository.saveRecommendationPolicy(selectedPolicy)
+
+                Toast.makeText(
+                    requireContext(),
+                    "登录成功：用户ID=$userId, 模式=$selectedPolicy",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                onLoginSuccess(userId, selectedPolicy)
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /**
      * 选择并上传歌曲到推荐服务
      */
     private fun showUploadDialog() {
+        // 先显示登录对话框
+        showUserLoginDialog { userId, policy ->
+            // 登录成功后，继续显示上传对话框
+            showUploadSongSelectionDialog(userId, policy)
+        }
+    }
+
+    /**
+     * 显示歌曲选择上传对话框
+     */
+    private fun showUploadSongSelectionDialog(userId: String, policy: String) {
         val deviceList: List<Music> = mMusicViewModel.deviceMusic.value ?: emptyList()
         if (deviceList.isEmpty()) {
             Toast.makeText(requireContext(), "没有检测到音乐", Toast.LENGTH_SHORT).show()
@@ -390,17 +532,49 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
                                     null
                                 }
 
+                            val userIdBody = userId
+                                .toRequestBody("text/plain".toMediaTypeOrNull())
+
                             val resp = withContext(Dispatchers.IO) {
-                                ArchiveService.api.uploadAudio(filePart, artistBody)
+                                ArchiveService.api.uploadAudio(filePart, artistBody, userIdBody)
                             }
 
-                            RecommendationRepository.saveFeatureMapping(
-                                localSongId = m.id,
-                                serverSongId = resp.song_id,
-                                featurePath = resp.feature_path,
-                                rawFeature = resp.feature
-                            )
-                            Log.d(TAG, "上传成功: ${resp.song_id}")
+                            val serverSongId = resp.getServerSongId()
+                            if (serverSongId == null) {
+                                Log.e(TAG, "上传响应中缺少 song_id 或 song_name")
+                                fail++
+                                continue
+                            }
+
+                            // 如果 m.id 为空，无法保存映射
+                            if (m.id == null) {
+                                Log.w(TAG, "本地歌曲 ID 为空，无法保存映射")
+                                fail++
+                                continue
+                            }
+
+                            // 如果服务器返回了 feature_path，保存映射；如果没有，只保存 serverSongId（用于后续推荐查询）
+                            if (!resp.feature_path.isNullOrBlank() || !resp.feature.isNullOrBlank()) {
+                                RecommendationRepository.saveFeatureMapping(
+                                    localSongId = m.id,
+                                    serverSongId = serverSongId,
+                                    featurePath = resp.feature_path,
+                                    rawFeature = resp.feature
+                                )
+                            } else {
+                                // 新服务器可能不返回 feature_path，但仍然需要保存 serverSongId 映射
+                                // 使用 serverSongId 作为 featureUrl（临时方案）
+                                val prefs = com.iven.musicplayergo.GoPreferences.getPrefsInstance()
+                                val features = prefs.recommendationFeatures?.toMutableList() ?: mutableListOf()
+                                features.removeAll { it.localSongId == m.id }
+                                features.add(com.iven.musicplayergo.models.RecommendationFeature(
+                                    localSongId = m.id, // 此时 m.id 已经确认不为 null
+                                    serverSongId = serverSongId,
+                                    featureUrl = serverSongId // 临时使用 serverSongId 作为 featureUrl
+                                ))
+                                prefs.recommendationFeatures = features
+                            }
+                            Log.d(TAG, "上传成功: $serverSongId")
                             success++
                         } catch (e: Exception) {
                             val errorMsg = when (e) {
@@ -456,17 +630,36 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
     ): List<Music> {
         val mapped = mutableListOf<Music>()
         items.forEach { item ->
-            val mappedById = RecommendationRepository.getLocalSongIdForServer(item.id)
+            val serverId = item.getServerId()
+            if (serverId.isBlank()) {
+                Log.w(TAG, "推荐项缺少 id 或 song_name: name=${item.name}")
+                return@forEach
+            }
+
+            val mappedById = RecommendationRepository.getLocalSongIdForServer(serverId)
             val song = when {
-                mappedById != null -> deviceSongs.firstOrNull { it.id == mappedById }
-                else -> findMusicByMetadata(
-                    deviceSongs,
-                    normalizeTitle(item.name),
-                    normalize(item.artist)
-                )
+                mappedById != null -> {
+                    deviceSongs.firstOrNull { it.id == mappedById }?.also {
+                        Log.d(TAG, "匹配成功（ID映射）: serverId=$serverId -> localId=${it.id}, title=${it.title}")
+                    }
+                }
+                else -> {
+                    val matched = findMusicByMetadata(
+                        deviceSongs,
+                        normalizeTitle(item.name),
+                        normalize(item.artist)
+                    )
+                    if (matched != null) {
+                        Log.d(TAG, "匹配成功（元数据）: serverId=$serverId, name=${item.name}, artist=${item.artist} -> localId=${matched.id}, title=${matched.title}")
+                    } else {
+                        Log.w(TAG, "匹配失败: serverId=$serverId, name=${item.name}, artist=${item.artist}")
+                    }
+                    matched
+                }
             }
             song?.let { mapped.add(it) }
         }
+        Log.d(TAG, "推荐匹配结果: 总数=${items.size}, 匹配成功=${mapped.size}, 匹配失败=${items.size - mapped.size}")
         return mapped.distinctBy { it.id }
     }
 
@@ -475,17 +668,36 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
         title: String?,
         artist: String?
     ): Music? {
-        val normalizedArtist = artist
-        return songs.firstOrNull { song ->
-            val rawTitle = song.title ?: song.displayName?.toFilenameWithoutExtension()
-            val songTitle = normalizeTitle(rawTitle)
-            val songArtist = normalize(song.artist)
-            when {
-                songTitle == null || title == null -> false
-                normalizedArtist.isNullOrBlank() -> songTitle == title
-                else -> songTitle == title && songArtist == normalizedArtist
-            }
+        if (title.isNullOrBlank()) {
+            return null
         }
+
+        val normalizedArtist = normalize(artist)
+
+        // 首先尝试精确匹配（标题 + 艺术家）
+        if (!normalizedArtist.isNullOrBlank()) {
+            songs.firstOrNull { song ->
+                val songTitle = normalizeTitle(song.title ?: song.displayName?.toFilenameWithoutExtension())
+                val songArtist = normalize(song.artist)
+                songTitle == title && songArtist == normalizedArtist
+            }?.let { return it }
+        }
+
+        // 如果精确匹配失败，尝试仅匹配标题
+        songs.firstOrNull { song ->
+            val songTitle = normalizeTitle(song.title ?: song.displayName?.toFilenameWithoutExtension())
+            songTitle == title
+        }?.let { return it }
+
+        // 如果还是失败，尝试模糊匹配（标题包含或包含标题）
+        songs.firstOrNull { song ->
+            val songTitle = normalizeTitle(song.title ?: song.displayName?.toFilenameWithoutExtension())
+            songTitle != null && (
+                songTitle.contains(title) || title.contains(songTitle)
+            )
+        }?.let { return it }
+
+        return null
     }
 
     private fun normalize(value: String?): String? =

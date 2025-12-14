@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // user_behaviors 集合：允许客户端写入，Cloud Functions 读取和转发
+    match /user_behaviors/{document=**} {
+      allow create: if true;  // 允许客户端创建用户行为记录
+      allow read, update, delete: if false;  // 仅 Cloud Functions 可读
+    }
+
+    // 默认拒绝所有其他访问
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
