@@ -152,6 +152,7 @@ class MediaPlayerHolder:
     var currentSong: Music? = null
     private var mPlayingSongs: List<Music>? = null
     private var mOriginalPlayingSongs: List<Music>? = null
+    private var mOriginalQueueSongs: List<Music>? = null
     var launchedBy = GoConstants.ARTIST_VIEW
 
     var currentVolumeInPercent = GoPreferences.getPrefsInstance().latestVolume
@@ -1000,28 +1001,38 @@ class MediaPlayerHolder:
 
     fun toggleShuffle(recommendedOrder: List<Long>? = null): Boolean {
         if (isShuffleEnabled) {
+            // Disable shuffle - restore original order
             isShuffleEnabled = false
             mOriginalPlayingSongs?.let { restored ->
                 mPlayingSongs = restored
             }
             mOriginalPlayingSongs = null
-            RecommendationRepository.getFeatureUrlForSong(currentSong?.id)?.let {
-                val wasPlaying = isPlaying
-                initMediaPlayer(currentSong, forceReset = true)
-                if (wasPlaying) {
-                    resumeMediaPlayer()
-                } else {
-                    state = GoConstants.PAUSED
+
+            // Also restore queue if it exists
+            if (isQueue != null && queueSongs.isNotEmpty()) {
+                mOriginalQueueSongs?.let { restored ->
+                    queueSongs.clear()
+                    queueSongs.addAll(restored)
                 }
+                mOriginalQueueSongs = null
             }
             return false
         }
         if (mPlayingSongs.isNullOrEmpty()) {
             return false
         }
+        // Enable shuffle - randomize song order
         isShuffleEnabled = true
         mOriginalPlayingSongs = mPlayingSongs?.toList()
-        mPlayingSongs = reorderSongsByRecommendation(mPlayingSongs, recommendedOrder)
+        mPlayingSongs = shuffleSongs(mPlayingSongs)
+
+        // Also shuffle queue if it exists
+        if (isQueue != null && queueSongs.isNotEmpty()) {
+            mOriginalQueueSongs = queueSongs.toList()
+            val shuffledQueue = shuffleSongs(queueSongs)
+            queueSongs.clear()
+            shuffledQueue?.let { queueSongs.addAll(it) }
+        }
         return true
     }
 
@@ -1063,6 +1074,7 @@ class MediaPlayerHolder:
         restoreQueueSong = null
         canRestoreQueue = false
         isQueueStarted = false
+        mOriginalQueueSongs = null
         GoPreferences.getPrefsInstance().isQueue = null
         if (::mediaPlayerInterface.isInitialized) {
             mediaPlayerInterface.onQueueStartedOrEnded(started = false)
