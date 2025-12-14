@@ -1,10 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+numpy
 pandas
 scikit-learn
 librosa
-numpy
-fastapi
-uvicorn
-python-multipart
+soundfile
+audioread
 requests
-pytest
-httpx
+torch
