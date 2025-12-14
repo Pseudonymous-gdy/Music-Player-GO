@@ -7,15 +7,12 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.example.musicplayergo.GoPreferences
 import com.example.musicplayergo.models.Music
-import com.example.musicplayergo.network.BehaviorEventPayload
-import com.example.musicplayergo.network.BehaviorPredictResponse
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 object AnalyticsLogger {
 
@@ -99,15 +96,6 @@ object AnalyticsLogger {
             Log.w(TAG, "   ✗ Firebase not initialized, event not sent")
         }
 
-        BehaviorReporter.recordEvent(
-            BehaviorEventPayload(
-                sessionId = sessionId,
-                sequence = sequence,
-                eventName = name,
-                timestamp = timestamp,
-                params = sanitizedParams
-            )
-        )
     }
 
     private fun buildBundle(params: Map<String, String?>): Bundle = Bundle().apply {
@@ -291,8 +279,4 @@ object AnalyticsLogger {
         }
     }
 
-    suspend fun requestPredictions(topK: Int = 10): BehaviorPredictResponse? =
-        withContext(Dispatchers.IO) {
-            BehaviorReporter.requestPredictions(ensureSessionId(), topK)
-        }
 }

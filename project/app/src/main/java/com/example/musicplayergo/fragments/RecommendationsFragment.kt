@@ -1,4 +1,4 @@
-package com.iven.musicplayergo.fragments
+package com.example.musicplayergo.fragments
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -22,32 +22,32 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.iven.musicplayergo.GoConstants
-import com.iven.musicplayergo.MusicViewModel
-import com.iven.musicplayergo.R
-import com.iven.musicplayergo.databinding.FragmentRecommendationsBinding
-import com.iven.musicplayergo.databinding.MusicItemBinding
-import com.iven.musicplayergo.extensions.handleViewVisibility
-import com.iven.musicplayergo.extensions.setTitleColor
-import com.iven.musicplayergo.extensions.toFormattedDate
-import com.iven.musicplayergo.extensions.toFormattedDuration
-import com.iven.musicplayergo.extensions.toName
-import com.iven.musicplayergo.extensions.toFilenameWithoutExtension
-import com.iven.musicplayergo.extensions.toContentUri
-import com.iven.musicplayergo.models.Music
-import com.iven.musicplayergo.network.RecommendationItem
-import com.iven.musicplayergo.network.RecommendQueryRequest
-import com.iven.musicplayergo.network.RecommendService
-import com.iven.musicplayergo.network.ArchiveService
-import com.iven.musicplayergo.player.MediaPlayerHolder
-import com.iven.musicplayergo.ui.MediaControlInterface
-import com.iven.musicplayergo.ui.UIControlInterface
-import com.iven.musicplayergo.utils.Lists
-import com.iven.musicplayergo.utils.Popups
-import com.iven.musicplayergo.utils.RecommendationRepository
-import com.iven.musicplayergo.utils.AnalyticsLogger
-import com.iven.musicplayergo.utils.Theming
-import com.iven.musicplayergo.utils.Versioning
+import com.example.musicplayergo.GoConstants
+import com.example.musicplayergo.MusicViewModel
+import com.example.musicplayergo.R
+import com.example.musicplayergo.databinding.FragmentRecommendationsBinding
+import com.example.musicplayergo.databinding.MusicItemBinding
+import com.example.musicplayergo.extensions.handleViewVisibility
+import com.example.musicplayergo.extensions.setTitleColor
+import com.example.musicplayergo.extensions.toFormattedDate
+import com.example.musicplayergo.extensions.toFormattedDuration
+import com.example.musicplayergo.extensions.toName
+import com.example.musicplayergo.extensions.toFilenameWithoutExtension
+import com.example.musicplayergo.extensions.toContentUri
+import com.example.musicplayergo.models.Music
+import com.example.musicplayergo.network.RecommendationItem
+import com.example.musicplayergo.network.RecommendQueryRequest
+import com.example.musicplayergo.network.RecommendService
+import com.example.musicplayergo.network.ArchiveService
+import com.example.musicplayergo.player.MediaPlayerHolder
+import com.example.musicplayergo.ui.MediaControlInterface
+import com.example.musicplayergo.ui.UIControlInterface
+import com.example.musicplayergo.utils.Lists
+import com.example.musicplayergo.utils.Popups
+import com.example.musicplayergo.utils.RecommendationRepository
+import com.example.musicplayergo.utils.AnalyticsLogger
+import com.example.musicplayergo.utils.Theming
+import com.example.musicplayergo.utils.Versioning
 import java.util.Locale
 import java.io.File
 import java.io.FileOutputStream
@@ -554,20 +554,20 @@ class RecommendationsFragment : Fragment(), SearchView.OnQueryTextListener {
                             }
 
                             // 如果服务器返回了 feature_path，保存映射；如果没有，只保存 serverSongId（用于后续推荐查询）
-                            if (!resp.feature_path.isNullOrBlank() || !resp.feature.isNullOrBlank()) {
+                            if (!resp.featurePath.isNullOrBlank() || !resp.feature.isNullOrBlank()) {
                                 RecommendationRepository.saveFeatureMapping(
                                     localSongId = m.id,
                                     serverSongId = serverSongId,
-                                    featurePath = resp.feature_path,
+                                    featurePath = resp.featurePath,
                                     rawFeature = resp.feature
                                 )
                             } else {
                                 // 新服务器可能不返回 feature_path，但仍然需要保存 serverSongId 映射
                                 // 使用 serverSongId 作为 featureUrl（临时方案）
-                                val prefs = com.iven.musicplayergo.GoPreferences.getPrefsInstance()
+                                val prefs = com.example.musicplayergo.GoPreferences.getPrefsInstance()
                                 val features = prefs.recommendationFeatures?.toMutableList() ?: mutableListOf()
                                 features.removeAll { it.localSongId == m.id }
-                                features.add(com.iven.musicplayergo.models.RecommendationFeature(
+                                features.add(com.example.musicplayergo.models.RecommendationFeature(
                                     localSongId = m.id, // 此时 m.id 已经确认不为 null
                                     serverSongId = serverSongId,
                                     featureUrl = serverSongId // 临时使用 serverSongId 作为 featureUrl

@@ -10,4 +10,7 @@ interface RecommendApi {
 
     @GET("api/songs")
     suspend fun listSongs(): SongsResponse
+
+    @POST("api/recommend/feedback")
+    suspend fun sendFeedback(@Body request: RecommendFeedbackRequest): RecommendFeedbackResponse
 }

@@ -566,13 +566,17 @@ class MediaPlayerHolder:
     }
 
     private fun logCurrentPlaybackProgress() {
-        if (!isMediaPlayer) return
-        val listenedSeconds = try {
-            mediaPlayer.currentPosition.toLong().coerceAtLeast(0L) / 1000
-        } catch (e: Exception) {
-            return
-        }
+        val listenedSeconds = getCurrentListenedSeconds() ?: return
         AnalyticsLogger.logSongListenDuration(currentSong, listenedSeconds)
+    }
+
+    private fun getCurrentListenedSeconds(): Long? {
+        if (!isMediaPlayer) return null
+        return try {
+            mediaPlayer.currentPosition.coerceAtLeast(0) / 1000L
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun repeatSong(startFrom: Int) {
@@ -1067,6 +1071,9 @@ class MediaPlayerHolder:
     }
 
     fun skip(isNext: Boolean) {
+        if (!isCurrentSongFM) {
+            sendSkipFeedback(currentSong)
+        }
         if (isCurrentSongFM) currentSongFM = null
         logCurrentPlaybackProgress()
 
@@ -1081,6 +1088,27 @@ class MediaPlayerHolder:
                 initMediaPlayer(currentSong, forceReset = false)
             }
         }
+    }
+
+    private fun sendSkipFeedback(song: Music?) {
+        val localSongId = song?.id ?: return
+        val listenedSeconds = getCurrentListenedSeconds()
+        val reward = calculateSkipReward(song.duration, listenedSeconds) ?: return
+        RecommendationRepository.sendFeedbackForLocalSong(
+            localSongId = localSongId,
+            reward = reward,
+            source = "skip",
+            listenedSeconds = listenedSeconds
+        )
+    }
+
+    private fun calculateSkipReward(durationMs: Long, listenedSeconds: Long?): Double? {
+        if (durationMs <= 0L) return null
+        val totalSeconds = durationMs / 1000.0
+        val listened = (listenedSeconds ?: 0L).coerceAtLeast(0L).toDouble()
+        val ratio = (listened / totalSeconds).coerceIn(0.0, 1.0)
+        val scaled = (ratio * 2) - 1.0
+        return scaled.coerceIn(-1.0, 0.5)
     }
 
     fun fastSeek(isForward: Boolean) {

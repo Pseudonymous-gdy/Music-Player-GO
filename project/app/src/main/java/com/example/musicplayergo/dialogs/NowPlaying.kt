@@ -24,6 +24,7 @@ import com.example.musicplayergo.ui.UIControlInterface
 import com.example.musicplayergo.utils.AnalyticsLogger
 import com.example.musicplayergo.utils.Lists
 import com.example.musicplayergo.utils.Popups
+import com.example.musicplayergo.utils.RecommendationRepository
 import com.example.musicplayergo.utils.UserActionLogger
 import com.example.musicplayergo.utils.Theming
 import com.example.musicplayergo.utils.Versioning
@@ -193,6 +194,7 @@ class NowPlaying: BottomSheetDialogFragment() {
                     mUIControlInterface.onFavoritesUpdated(clear = false)
                     mph.onUpdateFavorites()
                     updateNpFavoritesIcon()
+                    sendHighRewardFeedback()
                 }
 
                 npShuffle?.setOnClickListener {
@@ -212,7 +214,7 @@ class NowPlaying: BottomSheetDialogFragment() {
                         }
                     )
                     setOnClickListener { setRepeat() }
-                    setupNPCoverButtonsToasts(npSaveTime, npLove, npEqualizer, npShuffle, this)
+                    setupNPCoverButtonsToasts(npSaveTime, npEqualizer, npShuffle, this)
                 }
 
                 with (npPauseOnEnd) {
@@ -390,6 +392,15 @@ class NowPlaying: BottomSheetDialogFragment() {
                 }
             }
         }
+    }
+
+    private fun sendHighRewardFeedback() {
+        val localSongId = mMediaPlayerHolder.currentSong?.id ?: return
+        RecommendationRepository.sendFeedbackForLocalSong(
+            localSongId = localSongId,
+            reward = 1.0,
+            source = "favorite_long_press"
+        )
     }
 
     private fun skip(isNext: Boolean) {

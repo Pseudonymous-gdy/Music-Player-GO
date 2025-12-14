@@ -1,14 +1,14 @@
-package com.iven.musicplayergo
+package com.example.musicplayergo
 
 import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import com.iven.musicplayergo.models.HistoryEntry
-import com.iven.musicplayergo.models.Music
-import com.iven.musicplayergo.models.NotificationAction
-import com.iven.musicplayergo.models.SavedEqualizerSettings
-import com.iven.musicplayergo.models.Sorting
-import com.iven.musicplayergo.models.RecommendationFeature
+import com.example.musicplayergo.models.HistoryEntry
+import com.example.musicplayergo.models.Music
+import com.example.musicplayergo.models.NotificationAction
+import com.example.musicplayergo.models.SavedEqualizerSettings
+import com.example.musicplayergo.models.Sorting
+import com.example.musicplayergo.models.RecommendationFeature
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import java.lang.reflect.Type
