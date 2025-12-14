@@ -2,13 +2,7 @@ pandas
 scikit-learn
 librosa
 numpy
-argparse
-json
-scipy
 fastapi
 uvicorn
 python-multipart
 requests
-soundfile
-audioread
-httpx
