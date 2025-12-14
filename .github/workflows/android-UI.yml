@@ -36,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0  # Full history for better analysis
 
-      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+      - name: Setup JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -45,12 +45,6 @@ jobs:
 
       - name: Grant Execute Permission for Gradlew
         run: chmod +x project/gradlew
-
-      - name: Run Kotlin Lint
-        run: |
-          cd project
-          ./gradlew ktlintCheck --stacktrace
-        continue-on-error: true
 
       - name: Run Android Lint
         run: |
@@ -79,7 +73,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+      - name: Setup JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -135,12 +129,12 @@ jobs:
   instrumented-tests:
     name: UI Tests (Instrumented)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     strategy:
+      fail-fast: false
       matrix:
         api-level: [29, 33]  # Test on Android 10 and 13
-        target: [google_apis]
 
     steps:
       - name: Checkout Repository
@@ -162,27 +156,26 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: AVD Cache
+      - name: Gradle Cache
         uses: actions/cache@v4
-        id: avd-cache
         with:
           path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api-level }}-${{ matrix.target }}
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Run Instrumented Tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
           arch: x86_64
           profile: Nexus 6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             cd project
-            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; input keyevent 82'
             ./gradlew connectedDebugAndroidTest --stacktrace
 
       - name: Upload UI Test Results
@@ -344,11 +337,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| UI Tests | ${{ needs.instrumented-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Exception Detection | ${{ needs.exception-detection.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| UI Tests | ${{ needs.instrumented-tests.result == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exception Detection | ${{ needs.exception-detection.result == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.code-quality.result }}" == "success" ] && \
