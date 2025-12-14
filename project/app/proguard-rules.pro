@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ====== Firebase Analytics ======
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# Keep Firebase Analytics classes
+-keep class com.google.firebase.analytics.** { *; }
+-keep interface com.google.firebase.analytics.** { *; }
+
+# Keep custom analytics logger
+-keep class com.example.musicplayergo.utils.AnalyticsLogger { *; }
+-keep class com.example.musicplayergo.utils.BehaviorReporter { *; }
+
+# Keep network models
+-keep class com.example.musicplayergo.network.** { *; }

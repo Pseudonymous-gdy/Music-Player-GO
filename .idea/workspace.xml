@@ -29,12 +29,12 @@
     &quot;assignee&quot;: &quot;Kumoris&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Pseudonymous-gdy/Music-Player-GO",
-    "accountId": "ac722548-8f03-4dab-8d58-70e45fbe8755"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Pseudonymous-gdy/Music-Player-GO.git&quot;,
+    &quot;accountId&quot;: &quot;ac722548-8f03-4dab-8d58-70e45fbe8755&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -57,12 +57,18 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "hliu",
+    "git-widget-placeholder": "master",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/lzh/Downloads/Music-Player-GO",
+    "last_opened_file_path": "C:/Users/26835/Desktop/Music-Player-GO",
     "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/project/app" />
+      <recent name="$PROJECT_DIR$/project/.gradle" />
+    </key>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="35006de5-222b-455a-a108-4a41b664dfa2" name="Changes" comment="" />

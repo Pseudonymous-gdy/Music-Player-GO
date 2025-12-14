@@ -1,0 +1,49 @@
+name: M_server Python tests
+
+on:
+  push:
+    branches: [ final_test ]
+    paths:
+      - "M_server/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [ final_test ]
+    paths:
+      - "M_server/**"
+      - ".github/workflows/**"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # 所有 run 步骤都在 M_server 目录下执行
+    defaults:
+      run:
+        working-directory: M_server
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # 主项目依赖：M_server/requirements.txt
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          # 测试额外依赖：M_server/tests/requirements.txt
+          if [ -f tests/requirements.txt ]; then
+            pip install -r tests/requirements.txt
+          fi
+          pip install pytest torch
+
+      - name: Run tests
+        run: |
+          export PYTHONPATH="$PWD:$PYTHONPATH"
+          pytest -q tests
