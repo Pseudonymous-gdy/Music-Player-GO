@@ -2,7 +2,7 @@ name: Android CI
   
 on:
   push:
-    branches: [ zlu ]
+    branches: [ zlu, final_test ]
   pull_request:
     branches: [ main ]
 
