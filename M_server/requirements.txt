@@ -9,3 +9,4 @@ soundfile
 audioread
 requests
 torch
+httpx
