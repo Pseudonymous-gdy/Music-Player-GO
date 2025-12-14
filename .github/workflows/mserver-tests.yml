@@ -44,5 +44,6 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        # 你的测试文件在 M_server/tests/test_app_new.py
-        run: pytest -q tests
+        run: |
+          export PYTHONPATH="$PWD:$PYTHONPATH"
+          pytest -q tests
