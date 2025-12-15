@@ -152,7 +152,6 @@ class MediaPlayerHolder:
     var currentSong: Music? = null
     private var mPlayingSongs: List<Music>? = null
     private var mOriginalPlayingSongs: List<Music>? = null
-    private var mOriginalQueueSongs: List<Music>? = null
     var launchedBy = GoConstants.ARTIST_VIEW
 
     var currentVolumeInPercent = GoPreferences.getPrefsInstance().latestVolume
@@ -616,7 +615,10 @@ class MediaPlayerHolder:
     private fun getSkipSong(isNext: Boolean): Music? {
 
         var listToSeek = mPlayingSongs
-        if (isQueue != null) listToSeek = queueSongs
+        // Only use queueSongs if queue is actually started and has songs
+        if (isQueue != null && isQueueStarted && queueSongs.isNotEmpty()) {
+            listToSeek = queueSongs
+        }
 
         try {
             if (isNext) {
@@ -626,16 +628,19 @@ class MediaPlayerHolder:
         } catch (e: IndexOutOfBoundsException) {
             e.printStackTrace()
             when {
-                isQueue != null -> {
+                isQueue != null && isQueueStarted -> {
                     val returnedSong = isQueue
                     if (isNext) {
+                        // Queue finished, disable it and return to original song
                         setQueueEnabled(enabled = false, canSkip = false)
                     } else {
+                        // Going backwards from start of queue, return to original song
                         isQueueStarted = false
                     }
                     return returnedSong
                 }
                 else -> {
+                    // Wrap around at list boundaries
                     if (listToSeek?.findIndex(currentSong) != 0) {
                         return listToSeek?.first()
                     }
@@ -1007,15 +1012,6 @@ class MediaPlayerHolder:
                 mPlayingSongs = restored
             }
             mOriginalPlayingSongs = null
-
-            // Also restore queue if it exists
-            if (isQueue != null && queueSongs.isNotEmpty()) {
-                mOriginalQueueSongs?.let { restored ->
-                    queueSongs.clear()
-                    queueSongs.addAll(restored)
-                }
-                mOriginalQueueSongs = null
-            }
             return false
         }
         if (mPlayingSongs.isNullOrEmpty()) {
@@ -1026,13 +1022,7 @@ class MediaPlayerHolder:
         mOriginalPlayingSongs = mPlayingSongs?.toList()
         mPlayingSongs = shuffleSongs(mPlayingSongs)
 
-        // Also shuffle queue if it exists
-        if (isQueue != null && queueSongs.isNotEmpty()) {
-            mOriginalQueueSongs = queueSongs.toList()
-            val shuffledQueue = shuffleSongs(queueSongs)
-            queueSongs.clear()
-            shuffledQueue?.let { queueSongs.addAll(it) }
-        }
+        // Queue always plays in the order songs were added, regardless of shuffle mode
         return true
     }
 
@@ -1059,6 +1049,24 @@ class MediaPlayerHolder:
         mediaPlayerInterface.onUpdateFavorites()
     }
 
+    fun addSongsToQueue(songsToQueue: List<Music>) {
+        fun removeDuplicates() {
+            queueSongs = queueSongs.distinctBy { it.id to it.albumId }.toMutableList()
+        }
+
+        if (isQueue != null && !canRestoreQueue && isQueueStarted) {
+            val currentPosition = queueSongs.findIndex(currentSong)
+            // Add songs to queue in the order they were provided
+            queueSongs.addAll(currentPosition + 1, songsToQueue)
+            removeDuplicates()
+            return
+        }
+
+        // Add songs to queue in the order they were provided
+        queueSongs.addAll(songsToQueue)
+        removeDuplicates()
+    }
+
     fun setQueueEnabled(enabled: Boolean, canSkip: Boolean) {
 
         if (enabled && ::mediaPlayerInterface.isInitialized) {
@@ -1074,7 +1082,7 @@ class MediaPlayerHolder:
         restoreQueueSong = null
         canRestoreQueue = false
         isQueueStarted = false
-        mOriginalQueueSongs = null
+        queueSongs.clear()
         GoPreferences.getPrefsInstance().isQueue = null
         if (::mediaPlayerInterface.isInitialized) {
             mediaPlayerInterface.onQueueStartedOrEnded(started = false)

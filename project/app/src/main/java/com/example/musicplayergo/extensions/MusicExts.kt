@@ -54,19 +54,8 @@ fun MediaPlayerHolder.setCanRestoreQueue() {
 }
 
 fun MediaPlayerHolder.addSongsToNextQueuePosition(songsToQueue: List<Music>) {
-
-    fun removeDuplicates() {
-        queueSongs = queueSongs.distinctBy { it.id to it.albumId }.toMutableList()
-    }
-
-    if (isQueue != null && !canRestoreQueue && isQueueStarted) {
-        val currentPosition = queueSongs.findIndex(currentSong)
-        queueSongs.addAll(currentPosition+1, songsToQueue)
-        removeDuplicates()
-        return
-    }
-    queueSongs.addAll(songsToQueue)
-    removeDuplicates()
+    // Delegate to the new method that properly handles shuffle mode
+    addSongsToQueue(songsToQueue)
 }
 
 //https://codereview.stackexchange.com/a/97819
