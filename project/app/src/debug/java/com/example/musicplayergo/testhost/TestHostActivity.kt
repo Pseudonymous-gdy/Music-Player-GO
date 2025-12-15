@@ -77,7 +77,7 @@ class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlIn
     }
 
     override fun onSongsShuffled(songs: List<Music>?, songLaunchedBy: String) {
-        // 与 MainActivity 行为一致：在此进行打散，避免 Fragment 传入原序
+        // 与 MainActivity 行为一致：在此进行打散,避免 Fragment 传入原序
         val result = songs?.shuffled()
         shuffledSongsRef.set(result)
         shuffledLatch.countDown()
