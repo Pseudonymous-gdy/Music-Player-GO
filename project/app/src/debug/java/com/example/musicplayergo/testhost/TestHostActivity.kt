@@ -2,8 +2,10 @@ package com.example.musicplayergo.testhost
 
 import android.os.Bundle
 import android.view.View
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import com.example.musicplayergo.MusicViewModel
 import com.example.musicplayergo.models.Music
 import com.example.musicplayergo.repository.MusicRepository
 import com.example.musicplayergo.ui.MediaControlInterface
@@ -24,6 +26,9 @@ class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlIn
 
     @Inject
     lateinit var musicRepository: MusicRepository
+
+    // ViewModel with Hilt injection
+    private val musicViewModel: MusicViewModel by viewModels()
 
     companion object {
         const val EXTRA_FRAGMENT = "extra_fragment"
@@ -52,6 +57,9 @@ class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlIn
             addView(container)
         }
         setContentView(root)
+
+        // Trigger music data loading - this will use FakeMusicRepository in tests
+        musicViewModel.getDeviceMusic()
 
         if (savedInstanceState == null) {
             when (intent.getStringExtra(EXTRA_FRAGMENT)) {

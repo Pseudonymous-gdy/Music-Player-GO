@@ -49,8 +49,10 @@ import com.example.musicplayergo.player.MediaPlayerInterface
 import com.example.musicplayergo.player.PlayerService
 import com.example.musicplayergo.preferences.SettingsFragment
 import com.example.musicplayergo.utils.*
+import dagger.hilt.android.AndroidEntryPoint
 
 
+@AndroidEntryPoint
 class MainActivity : BaseActivity(), UIControlInterface, MediaControlInterface {
 
     // View binding classes
