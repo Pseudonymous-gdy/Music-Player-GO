@@ -94,9 +94,15 @@ class HistoryFrequentlyPlayedEspressoTest {
         ).putExtra(TestHostActivity.EXTRA_FRAGMENT, TestHostActivity.FRAG_HISTORY)
 
         ActivityScenario.launch<TestHostActivity>(intent).use {
+            // 等待 Fragment 加载和 Flow 收集数据
+            Thread.sleep(1000)
+
             // 列表首项 title 应为 "Song A"
             onView(withId(R.id.allMusicRv))
                 .check(matches(isDisplayed()))
+
+            // 等待 RecyclerView 完成数据绑定
+            Thread.sleep(300)
 
             // 断言第 0 项的 title 文本
             onView(allOf(withId(R.id.history_title), isDescendantOfA(nthChildOf(withId(R.id.allMusicRv), 0))))

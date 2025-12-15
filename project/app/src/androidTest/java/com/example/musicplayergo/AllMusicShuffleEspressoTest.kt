@@ -105,10 +105,16 @@ class AllMusicShuffleEspressoTest {
                 vm.deviceMusicFiltered = songs.toMutableList()
             }
 
+            // 等待 LiveData 发射和 Fragment 完成初始化
+            Thread.sleep(500)
+
             // 等待 AllMusicFragment 完成渲染并显示 shuffle FAB
             onView(withId(R.id.shuffle_fab))
                 .check(matches(isDisplayed()))
                 .perform(click())
+
+            // 等待点击事件处理完成
+            Thread.sleep(200)
 
             // 拦截到 onSongsShuffled 回调
             scenario.onActivity { activity ->
