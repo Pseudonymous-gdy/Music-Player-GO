@@ -99,6 +99,7 @@ android {
     namespace 'com.example.musicplayergo'
     lint {
         disable 'MissingTranslation', 'AllowBackup', 'GoogleAppIndexingWarning'
+        baseline = file("lint-baseline.xml")
     }
 }
 
