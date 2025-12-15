@@ -5,17 +5,25 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.example.musicplayergo.models.Music
+import com.example.musicplayergo.repository.MusicRepository
 import com.example.musicplayergo.ui.MediaControlInterface
 import com.example.musicplayergo.ui.UIControlInterface
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
+import javax.inject.Inject
 
 /**
  * 仅在 androidTest 使用的宿主 Activity：
  * - 可承载 AllMusicFragment / HistoryFragment
  * - 截获 MediaControlInterface 回调，便于断言
+ * - 支持 Hilt 依赖注入
  */
+@AndroidEntryPoint
 class TestHostActivity : AppCompatActivity(), MediaControlInterface, UIControlInterface {
+
+    @Inject
+    lateinit var musicRepository: MusicRepository
 
     companion object {
         const val EXTRA_FRAGMENT = "extra_fragment"

@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.kapt'
     id 'com.google.gms.google-services'
+    id 'com.google.dagger.hilt.android'
 }
 
 android {
@@ -10,7 +11,7 @@ android {
     //noinspection GradleDependency
     defaultConfig {
         applicationId "com.example.musicplayergo"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "com.example.musicplayergo.HiltTestRunner"
         minSdkVersion 23
         targetSdkVersion 34
         versionCode 187
@@ -117,9 +118,20 @@ dependencies {
 // Kotlin
     //https://github.com/JetBrains/kotlin/blob/master/ChangeLog.md
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    //https://github.com/Kotlin/kotlinx.coroutines/blob/master/CHANGES.md
+    //https://github.com/Kotlin/kotlinx.coroutines/blob/master/CHANGES.md"
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.2'
+
+// Hilt for Dependency Injection
+    //https://dagger.dev/hilt/
+    implementation 'com.google.dagger:hilt-android:2.48'
+    kapt 'com.google.dagger:hilt-compiler:2.48'
+
+    // Hilt testing
+    androidTestImplementation 'com.google.dagger:hilt-android-testing:2.48'
+    kaptAndroidTest 'com.google.dagger:hilt-compiler:2.48'
+    testImplementation 'com.google.dagger:hilt-android-testing:2.48'
+    kaptTest 'com.google.dagger:hilt-compiler:2.48'
 
 // Unit Testing (JVM tests)
     testImplementation 'junit:junit:4.13.2'
@@ -164,8 +176,8 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    // Firebase (降级到与 Kotlin 1.9.24 兼容的版本)
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

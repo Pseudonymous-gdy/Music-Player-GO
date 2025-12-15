@@ -7,8 +7,10 @@ import coil.ImageLoaderFactory
 import coil.request.CachePolicy
 import com.example.musicplayergo.utils.Theming
 import com.example.musicplayergo.utils.AnalyticsLogger
+import dagger.hilt.android.HiltAndroidApp
 
 
+@HiltAndroidApp
 class GoApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
