@@ -190,8 +190,8 @@ jobs:
           heap-size: 512M
           ram-size: 4096M
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          working-directory: ./project
           script: |
-            cd project
             adb devices
             echo "Waiting for emulator to be ready..."
             adb wait-for-device
