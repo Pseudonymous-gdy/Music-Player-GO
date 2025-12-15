@@ -21,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 
 // RecyclerView.ViewHolder 的简便匹配（直接用 HistoryFragment 内部 ViewHolder 类型名避免依赖）
+@RunWith(AndroidJUnit4::class)
 class HistoryFrequentlyPlayedEspressoTest {
 
     @Before
@@ -107,20 +108,22 @@ class HistoryFrequentlyPlayedEspressoTest {
      */
     @Ignore("暂时禁用：需要重构数据层以支持依赖注入和测试数据注入")
     @Test
-    fun history_displays_frequently_played_on_top_without_duplicates() = runBlocking {
-        // 等待 Flow 发射完成（确保数据已写入）
-        withTimeout(3000) {
-            var retries = 0
-            while (PlaybackHistory.current().isEmpty() && retries < 30) {
-                delay(100)
-                retries++
+    fun history_displays_frequently_played_on_top_without_duplicates() {
+        runBlocking {
+            // 等待 Flow 发射完成（确保数据已写入）
+            withTimeout(3000) {
+                var retries = 0
+                while (PlaybackHistory.current().isEmpty() && retries < 30) {
+                    delay(100)
+                    retries++
+                }
             }
-        }
 
-        // 确认历史数据已设置
-        val historySize = PlaybackHistory.current().size
-        if (historySize == 0) {
-            throw AssertionError("PlaybackHistory is empty after setup - test data not injected properly")
+            // 确认历史数据已设置
+            val historySize = PlaybackHistory.current().size
+            if (historySize == 0) {
+                throw AssertionError("PlaybackHistory is empty after setup - test data not injected properly")
+            }
         }
 
         val intent = Intent(
