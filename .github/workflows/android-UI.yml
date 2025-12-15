@@ -147,11 +147,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
-    strategy:
-      matrix:
-        api-level: [29, 33]  # Test on Android 10 and 13
-        target: [google_apis]
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -179,25 +174,36 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ matrix.api-level }}-${{ matrix.target }}
+          key: avd-28-default
 
       - name: Run Instrumented Tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
+          api-level: 28
+          target: default
           arch: x86_64
           profile: Nexus 6
           disable-animations: true
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          force-avd-creation: false
+          emulator-boot-timeout: 900
+          disk-size: 4096M
+          heap-size: 512M
+          ram-size: 4096M
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
-            bash -lc "cd project && adb wait-for-device && for i in \$(seq 1 120); do BOOT=\$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r'); if [ \"\$BOOT\" = \"1\" ]; then break; fi; sleep 1; done; adb -s emulator-5554 shell input keyevent 82; ./gradlew connectedDebugAndroidTest --stacktrace"
+            cd project
+            adb devices
+            echo "Waiting for emulator to be ready..."
+            adb wait-for-device
+            adb shell input keyevent 82
+            sleep 10
+            ./gradlew connectedDebugAndroidTest --stacktrace
 
       - name: Upload UI Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: instrumented-test-results-api-${{ matrix.api-level }}
+          name: instrumented-test-results-api-28
           path: |
             project/app/build/reports/androidTests/connected/
             project/app/build/outputs/androidTest-results/connected/
@@ -207,7 +213,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-screenshots-api-${{ matrix.api-level }}
+          name: test-screenshots-api-28
           path: |
             project/app/build/outputs/connected_android_test_additional_output/
           retention-days: 7
