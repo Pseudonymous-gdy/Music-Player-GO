@@ -2,7 +2,7 @@ name: M_server Python tests
 
 on:
   push:
-    branches: [ final_test ]
+    branches: [ final_test, main ]
     paths:
       - "M_server/**"
       - ".github/workflows/**"
